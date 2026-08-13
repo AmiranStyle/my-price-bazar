@@ -1,7 +1,7 @@
 const BOT_TOKEN = "8993031014:AAFL2otp7p9tCuWQm0d1_N7pJKjD8W_1tcg"; // توکنی که از BotFather گرفتید
 const CHANNEL_ID = "@AmiranEducation";
 // لینک مستقیم عکس آپلود شده
-const PHOTO_URL = "https://cdn.imgurl.ir/uploads/p593902_ChatGPT_Image_Aug_14_2026_02_44_30_AM.png"; 
+const PHOTO_URL = "https://i.postimg.cc/1t65gR2L/Chat-GPT-Image-Aug-14-2026-02-44-30-AM.png"; 
 
 // تبدیل اعداد به فارسی و فرمت سه رقم سه رقم
 function formatNumberFa(num) {
