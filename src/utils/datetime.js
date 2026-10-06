@@ -2,7 +2,6 @@
 // 📅 ابزارهای تاریخ و زمان تهران
 // ==========================================
 
-// دریافت تاریخ و ساعت تهران
 export function getTehranDateTime() {
   const now = new Date();
   const dateStr = new Intl.DateTimeFormat("fa-IR-u-ca-persian", {
@@ -23,9 +22,7 @@ export function getTehranDateTime() {
   return { dateStr, timeStr };
 }
 
-// تبدیل زمان تهران به ساعت UTC
 export function tehranTimeToUTC(timeStr) {
-  // زمان تهران = UTC+3:30
   const [h, m] = timeStr.split(":").map(Number);
   let utcH = h - 3;
   let utcM = m - 30;
