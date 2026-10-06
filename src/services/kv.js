@@ -1,27 +1,28 @@
 // ==========================================
-// 💾 مدیریت تنظیمات در Cloudflare KV
+// 💾 مدیریت تنظیمات و لاگ‌ها در Cloudflare KV
 // ==========================================
 
 import { getDefaultSettings } from '../config/defaults.js';
 
-// خواندن تنظیمات از KV (با fallback به پیش‌فرض)
 export async function getSettings(env) {
   try {
-    const stored = await env.BOT_CONFIG.get("settings", "json");
-    if (stored && stored.symbols) return stored;
+    if (env.BOT_CONFIG) {
+      const stored = await env.BOT_CONFIG.get("settings", "json");
+      if (stored && stored.symbols) return stored;
+    }
   } catch (e) {
     console.error("KV READ ERROR:", e.message);
   }
   return getDefaultSettings(env);
 }
 
-// ذخیره تنظیمات در KV
 export async function saveSettings(env, settings) {
+  if (!env.BOT_CONFIG) throw new Error("KV Namespace (BOT_CONFIG) متصل نشده است.");
   await env.BOT_CONFIG.put("settings", JSON.stringify(settings));
 }
 
-// خواندن لاگ ارسال‌های امروز (جلوگیری از ارسال تکراری)
 export async function getSentLog(env) {
+  if (!env.BOT_CONFIG) return [];
   const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Tehran" });
   const key = `sent_log_${today}`;
   try {
@@ -32,8 +33,8 @@ export async function getSentLog(env) {
   }
 }
 
-// ذخیره لاگ ارسال
 export async function addSentLog(env, timeStr) {
+  if (!env.BOT_CONFIG) return;
   const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Tehran" });
   const key = `sent_log_${today}`;
   const log = await getSentLog(env);
