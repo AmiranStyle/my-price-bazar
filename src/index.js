@@ -1,5 +1,5 @@
 // ==========================================
-// 📌 ربات قیمت‌دهی روزانه بازار - ورژن ۳.۱
+// 📌 ربات قیمت‌دهی روزانه بازار - ورژن ۳.۲
 // ماژولار | خودترمیم | همراه با داشبورد مدیریت
 // ==========================================
 
@@ -192,9 +192,10 @@ async function getTetherPrice() {
 }
 
 // ────────────────────────────────────────
-// ۳. صندوق عیار (منبع اصلی: TGJU/gc3 | پشتیبان: Emofid)
-// ⚠️ نکته: صفحه ime_fund_ayar در TGJU غیرفعال شده!
-//    صفحه صحیح: gc3
+// ۳. صندوق عیار (منبع اصلی: Emofid | پشتیبان: TGJU/gc3)
+// ⚠️ اولویت با Emofid است چون شما تأیید کردید عدد صحیح را می‌دهد
+//    صفحه ime_fund_ayar در TGJU غیرفعال شده
+//    صفحه صحیح TGJU: gc3
 // ────────────────────────────────────────
 async function getAyarPriceFromTGJU() {
   try {
@@ -235,7 +236,7 @@ async function getAyarPriceFromEmofid() {
     const html = await response.text();
     const text = htmlToText(html);
 
-    // لیبل‌های صحیح در صفحه ایموفید
+    // لیبل‌های صحیح در صفحه ایموفید (به ترتیب اولویت)
     const rialPrice =
       extractNumberAfterLabel(text, "قیمت هر واحد", 100) ||
       extractNumberAfterLabel(text, "آخرین قیمت", 100) ||
@@ -258,19 +259,22 @@ async function getAyarPriceFromEmofid() {
   }
 }
 
-// تابع اصلی عیار: ابتدا TGJU/gc3، سپس Emofid
+// تابع اصلی عیار: ابتدا Emofid، سپس TGJU/gc3
 async function getAyarPrice() {
-  const tgjuPrice = await getAyarPriceFromTGJU();
-  if (tgjuPrice !== null) {
-    console.log(`AYAR SOURCE = TGJU/gc3 | ${tgjuPrice} Toman`);
-    return tgjuPrice;
-  }
-
-  console.log("AYAR TGJU FAILED → EMOFID FALLBACK");
+  // اولویت اول: Emofid (منبع اصلی)
   const emofidPrice = await getAyarPriceFromEmofid();
   if (emofidPrice !== null) {
     console.log(`AYAR SOURCE = EMOFID | ${emofidPrice} Toman`);
     return emofidPrice;
+  }
+
+  console.log("AYAR EMOFID FAILED → TGJU/gc3 FALLBACK");
+
+  // اولویت دوم: TGJU/gc3 (پشتیبان)
+  const tgjuPrice = await getAyarPriceFromTGJU();
+  if (tgjuPrice !== null) {
+    console.log(`AYAR SOURCE = TGJU/gc3 | ${tgjuPrice} Toman`);
+    return tgjuPrice;
   }
 
   return null;
@@ -499,6 +503,7 @@ function renderDashboard(channelId, adminId) {
     .btn:hover { opacity: 0.85; }
     .btn-send { background: #28a745; }
     .btn-test { background: #17a2b8; }
+    .btn-debug { background: #ffc107; color: #333; }
     .btn-logout { background: #dc3545; }
     .status { padding: 8px 12px; border-radius: 6px; font-size: 0.9rem; }
     .status-ok { background: #d4edda; color: #155724; }
@@ -508,7 +513,7 @@ function renderDashboard(channelId, adminId) {
   <div class="container">
     <div class="header">
       <h2>📊 داشبورد مدیریت ربات قیمت</h2>
-      <p style="margin-top:8px;font-size:0.9rem;opacity:0.8;">نسخه ۳.۱ | ماژولار و حرفه‌ای</p>
+      <p style="margin-top:8px;font-size:0.9rem;opacity:0.8;">نسخه ۳.۲ | ماژولار و حرفه‌ای</p>
     </div>
 
     <div class="card">
@@ -524,6 +529,7 @@ function renderDashboard(channelId, adminId) {
       <div style="text-align:center;">
         <a href="/send" class="btn btn-send">📤 ارسال دستی قیمت به کانال</a>
         <a href="/test-api" class="btn btn-test">🧪 تست دریافت قیمت‌ها</a>
+        <a href="/debug-ayar" class="btn btn-debug">🔍 دیباگ عیار</a>
         <a href="/logout" class="btn btn-logout">🚪 خروج</a>
       </div>
     </div>
@@ -533,6 +539,7 @@ function renderDashboard(channelId, adminId) {
       <p style="font-size:0.9rem;line-height:1.8;">
         • <b>ارسال دستی:</b> قیمت‌ها را دریافت و فوراً به کانال ارسال می‌کند.<br>
         • <b>تست قیمت‌ها:</b> فقط قیمت‌ها را نمایش می‌دهد (بدون ارسال).<br>
+        • <b>دیباگ عیار:</b> تست مستقیم منابع عیار (Emofid و TGJU/gc3).<br>
         • <b>ارسال خودکار:</b> هر روز ساعت ۱۹:۰۰ از طریق Cron انجام می‌شود.<br>
         • <b>هشدار خطا:</b> در صورت بروز مشکل، به پی‌وی مدیر ارسال می‌شود.
       </p>
@@ -652,6 +659,41 @@ export default {
         const prices = await fetchAllPrices();
         return new Response(
           JSON.stringify({ ok: true, data: prices }, null, 2),
+          { headers: { "Content-Type": "application/json; charset=utf-8" } }
+        );
+      } catch (error) {
+        return new Response(
+          JSON.stringify({ ok: false, error: error.message }, null, 2),
+          { status: 500, headers: { "Content-Type": "application/json; charset=utf-8" } }
+        );
+      }
+    }
+
+    // ── مسیر: دیباگ اختصاصی عیار (جدید در نسخه ۳.۲) ──
+    if (url.pathname === "/debug-ayar") {
+      try {
+        // تست مستقیم هر دو منبع به صورت جداگانه
+        const emofidResult = await getAyarPriceFromEmofid();
+        const tgjuResult = await getAyarPriceFromTGJU();
+
+        return new Response(
+          JSON.stringify({
+            ok: true,
+            sources: {
+              emofid: {
+                price_toman: emofidResult,
+                status: emofidResult !== null ? "✅ موفق" : "❌ ناموفق"
+              },
+              tgju_gc3: {
+                price_toman: tgjuResult,
+                status: tgjuResult !== null ? "✅ موفق" : "❌ ناموفق"
+              }
+            },
+            final_result: {
+              selected_source: emofidResult !== null ? "EMOFID" : (tgjuResult !== null ? "TGJU/gc3" : "FAILED"),
+              final_price: emofidResult !== null ? emofidResult : tgjuResult
+            }
+          }, null, 2),
           { headers: { "Content-Type": "application/json; charset=utf-8" } }
         );
       } catch (error) {
