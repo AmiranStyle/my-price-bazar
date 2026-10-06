@@ -2,7 +2,6 @@
 // 🔧 ابزارهای عمومی تبدیل و فرمت‌دهی
 // ==========================================
 
-// تبدیل اعداد فارسی/عربی به انگلیسی
 export function toEngDigits(str) {
   if (!str) return "";
   return String(str)
@@ -10,7 +9,6 @@ export function toEngDigits(str) {
     .replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d));
 }
 
-// تبدیل رشته به عدد معتبر
 export function parseNumber(value) {
   if (!value) return null;
   const normalized = toEngDigits(String(value))
@@ -20,13 +18,11 @@ export function parseNumber(value) {
   return Number.isFinite(num) && num > 0 ? num : null;
 }
 
-// فرمت‌دهی عدد با جداکننده فارسی
 export function formatFa(num) {
   if (!Number.isFinite(Number(num))) return "نامشخص";
   return Number(num).toLocaleString("fa-IR");
 }
 
-// تبدیل ریال به تومان
 export function rialToToman(rial) {
   const value = parseNumber(rial);
   return value ? Math.round(value / 10) : null;
