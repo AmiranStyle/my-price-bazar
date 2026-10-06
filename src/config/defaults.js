@@ -2,7 +2,7 @@
 // ⚙️ تنظیمات پیش‌فرض سیستم
 // ==========================================
 
-export function getDefaultSettings(env) {
+export function getDefaultSettings(env = {}) {
   return {
     channel_id: env.DEFAULT_CHANNEL_ID || "@PulseHub_co",
     admin_id: env.ADMIN_USER_ID || "165944913",
