@@ -1,0 +1,58 @@
+// ==========================================
+// ⚙️ تنظیمات پیش‌فرض سیستم
+// ==========================================
+
+export function getDefaultSettings(env) {
+  return {
+    channel_id: env.DEFAULT_CHANNEL_ID || "@PulseHub_co",
+    admin_id: env.ADMIN_USER_ID || "165944913",
+    photo_url: env.PHOTO_URL || "https://i.postimg.cc/1t65gR2L/Chat-GPT-Image-Aug-14-2026-02-44-30-AM.png",
+    caption_template:
+      "📊 <b>قیمت‌های لحظه‌ای بازار</b>\n" +
+      "🗓 {date} | ساعت {time}\n\n" +
+      "{prices}\n\n" +
+      "#قیمت_طلا #تتر #سرمایه_گذاری\n\n" +
+      "🆔 {channel}",
+    symbols: [
+      {
+        id: "gold18",
+        name: "طلای ۱۸ عیار",
+        emoji: "🔸",
+        source_type: "tgju",
+        source_slug: "geram18",
+        label: "نرخ فعلی",
+        is_rial: true,
+        min: 1000000,
+        max: 150000000,
+        enabled: true
+      },
+      {
+        id: "usdt",
+        name: "تتر (USDT)",
+        emoji: "🟢",
+        source_type: "nobitex",
+        source_slug: "USDTIRT",
+        label: "",
+        is_rial: true,
+        min: 20000,
+        max: 500000,
+        enabled: true
+      },
+      {
+        id: "ayar",
+        name: "صندوق عیار",
+        emoji: "🔹",
+        source_type: "emofid",
+        source_slug: "https://www.emofid.com/funds/ayar/",
+        label: "قیمت هر واحد",
+        is_rial: true,
+        min: 10000,
+        max: 500000,
+        enabled: true
+      }
+    ],
+    schedules: [
+      { id: "sch_1", time: "19:00", enabled: true }
+    ]
+  };
+}
