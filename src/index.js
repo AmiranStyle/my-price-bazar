@@ -126,7 +126,7 @@ export default {
     // ── مسیر: ارسال دستی به کانال ──
     if (url.pathname === "/send") {
       try {
-        await sendPostToChannel(botToken, settings);
+        await sendPostToChannel(botToken, settings, env);
         return new Response(
           JSON.stringify({ ok: true, message: "پست با موفقیت در کانال منتشر شد." }, null, 2),
           { headers: { "Content-Type": "application/json; charset=utf-8" } }
@@ -143,7 +143,7 @@ export default {
     // ── مسیر: تست دریافت قیمت‌ها (JSON) ──
     if (url.pathname === "/test-api") {
       try {
-        const priceResults = await fetchAllPrices(settings);
+        const priceResults = await fetchAllPrices(settings, env);
         const data = {};
         priceResults.forEach(r => { data[r.symbol.id] = r.price; });
         return new Response(
@@ -197,7 +197,7 @@ export default {
           } else if (text === "/send") {
             await sendTelegramMessage(botToken, chatId, "⏳ در حال دریافت داده‌ها و انتشار در کانال...");
             try {
-              await sendPostToChannel(botToken, settings);
+              await sendPostToChannel(botToken, settings, env);
               await sendTelegramMessage(botToken, chatId, "✅ پست با موفقیت در کانال منتشر شد!");
             } catch (error) {
               await sendTelegramMessage(botToken, chatId, `❌ خطا در ارسال:\n${error.message}`);
@@ -249,7 +249,7 @@ export default {
         // اگر در بازه ۱۰ دقیقه‌ای ساعت ارسال باشیم و امروز در این ساعت ارسال نشده باشد
         if (minuteDiff >= 0 && minuteDiff < 10 && !sentLog.includes(schedule.time)) {
           console.log(`CRON: زمان ارسال فرا رسید (${schedule.time})`);
-          await sendPostToChannel(botToken, settings);
+          await sendPostToChannel(botToken, settings, env);
           await addSentLog(env, schedule.time);
           console.log(`CRON: ارسال با موفقیت انجام شد (${schedule.time})`);
         }
