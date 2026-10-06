@@ -1,8 +1,7 @@
 // ==========================================
-// 📱 ارتباطات تلگرام
+// 📱 سرویس پیام‌رسان تلگرام
 // ==========================================
 
-// ارسال پیام متنی
 export async function sendTelegramMessage(botToken, chatId, text, extra = {}) {
   if (!botToken) throw new Error("BOT_TOKEN تنظیم نشده است.");
   const response = await fetch(
@@ -16,8 +15,7 @@ export async function sendTelegramMessage(botToken, chatId, text, extra = {}) {
   return await response.json();
 }
 
-// ارسال هشدار خطا به پی‌وی مدیر
-export async function sendErrorToAdmin(botToken, adminId, errorMsg, context = "نامشخص") {
+export async function sendErrorToAdmin(botToken, adminId, errorMsg, context = "عملیات سیستم") {
   if (!botToken || !adminId) return;
 
   const nowFa = new Date().toLocaleString("fa-IR", {
@@ -27,14 +25,14 @@ export async function sendErrorToAdmin(botToken, adminId, errorMsg, context = "�
   });
 
   const message =
-    `🚨 <b>خطای بحرانی در سیستم قیمت‌دهی</b>\n\n` +
-    `📌 <b>بخش:</b> ${context}\n` +
-    `⚠️ <b>جزئیات:</b>\n<code>${errorMsg}</code>\n` +
-    `⏰ <b>زمان:</b> ${nowFa}`;
+    `🚨 <b>هشدار خطای بحرانی در ربات قیمت</b>\n\n` +
+    `📌 <b>موقعیت:</b> ${context}\n` +
+    `⚠️ <b>شرح خطا:</b>\n<code>${errorMsg}</code>\n\n` +
+    `⏰ <b>زمان رخداد:</b> ${nowFa}`;
 
   try {
     await sendTelegramMessage(botToken, adminId, message);
   } catch (e) {
-    console.error("FAILED TO SEND ERROR TO ADMIN:", e.message);
+    console.error("خطا در ارسال پیام هشدار به ادمین:", e.message);
   }
 }
