@@ -2,7 +2,9 @@
 // 🌐 ابزارهای پارسینگ HTML
 // ==========================================
 
-// هدرهای مرورگر برای دور زدن محدودیت‌ها
+import { parseNumber } from './helpers.js';
+
+// هدرهای مرورگر برای دور زدن محدودیت‌ها و فایروال‌ها
 export const BROWSER_HEADERS = {
   "User-Agent":
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
@@ -13,7 +15,7 @@ export const BROWSER_HEADERS = {
   "Pragma": "no-cache"
 };
 
-// تبدیل HTML به متن ساده
+// تبدیل تگ‌های HTML به متن ساده
 export function htmlToText(html) {
   if (!html) return "";
   return String(html)
@@ -35,10 +37,10 @@ export function extractNumberAfterLabel(text, label, maxChars = 120) {
   );
   const match = text.match(pattern);
   if (!match || !match[1]) return null;
-  const numberMatch = match[1].match(/[0-9۰-۹٠-٩][0-9۰-۹٠-٠-٩,٬]*/);
+  
+  // استخراج ارقام پیوسته با پشتیبانی از ارقام فارسی و عربی
+  const numberMatch = match[1].match(/[0-9۰-۹٠-٩][0-9۰-۹٠-٩,٬]*/);
   if (!numberMatch) return null;
 
-  // فراخوانی تابع کمکی از همین فایل
-  const { parseNumber } = require('./helpers.js');
   return parseNumber(numberMatch[0]);
 }
