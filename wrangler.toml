@@ -2,7 +2,15 @@ name = "my-price-bazar"
 main = "src/index.js"
 compatibility_date = "2026-10-06"
 
+# کرون هر ۱۰ دقیقه اجرا می‌شود تا زمان‌های ارسال را چک کند
+triggers = { cron = ["*/10 * * * *"] }
+
 [vars]
 DEFAULT_CHANNEL_ID = "@PulseHub_co"
 ADMIN_USER_ID = "165944913"
 PHOTO_URL = "https://i.postimg.cc/1t65gR2L/Chat-GPT-Image-Aug-14-2026-02-44-30-AM.png"
+
+# اتصال به فضای ذخیره‌سازی تنظیمات
+[[kv_namespaces]]
+binding = "BOT_CONFIG"
+id = "765739c8390a48f1bdcab3866f1e4450"
