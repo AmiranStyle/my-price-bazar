@@ -1,5 +1,5 @@
 // ==========================================
-// 🚀 داشبورد مدرن تک‌صفحه‌ای (SPA - Zero Reload)
+// 🚀 داشبورد مدرن تک‌صفحه‌ای (SPA - Multi-Source Dashboard)
 // ==========================================
 
 export function renderDashboardSPA(settings) {
@@ -28,19 +28,10 @@ export function renderDashboardSPA(settings) {
     body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 1.5rem; }
     .container { max-width: 960px; margin: 0 auto; }
     
-    /* Header */
     .header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 1rem;
-      background: var(--card-bg);
-      backdrop-filter: blur(12px);
-      border: 1px solid var(--card-border);
-      padding: 1.25rem 1.5rem;
-      border-radius: 16px;
-      margin-bottom: 1.5rem;
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;
+      background: var(--card-bg); backdrop-filter: blur(12px); border: 1px solid var(--card-border);
+      padding: 1.25rem 1.5rem; border-radius: 16px; margin-bottom: 1.5rem;
     }
     .header-info { display: flex; align-items: center; gap: 12px; }
     .header-logo { font-size: 2rem; background: rgba(59, 130, 246, 0.15); padding: 8px 12px; border-radius: 12px; }
@@ -48,23 +39,12 @@ export function renderDashboardSPA(settings) {
     .header-title p { font-size: 0.8rem; color: var(--text-muted); }
     .header-actions { display: flex; gap: 8px; }
     
-    /* Buttons */
     .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 8px 14px;
-      border-radius: 10px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      border: none;
-      cursor: pointer;
-      text-decoration: none;
-      transition: all 0.2s ease;
-      color: #fff;
+      display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 10px;
+      font-size: 0.85rem; font-weight: 600; border: none; cursor: pointer; text-decoration: none;
+      transition: all 0.2s ease; color: #fff;
     }
     .btn:hover { opacity: 0.9; transform: translateY(-1px); }
-    .btn:active { transform: translateY(0); }
     .btn-primary { background: var(--primary); }
     .btn-success { background: var(--success); }
     .btn-danger { background: var(--danger); }
@@ -72,140 +52,82 @@ export function renderDashboardSPA(settings) {
     .btn-secondary { background: rgba(255, 255, 255, 0.1); color: var(--text); }
     .btn-sm { padding: 5px 10px; font-size: 0.75rem; border-radius: 8px; }
 
-    /* Nav Tabs (No Reload) */
     .nav-tabs {
-      display: flex;
-      gap: 8px;
-      background: var(--card-bg);
-      backdrop-filter: blur(12px);
-      border: 1px solid var(--card-border);
-      padding: 8px;
-      border-radius: 14px;
-      margin-bottom: 1.5rem;
+      display: flex; gap: 8px; background: var(--card-bg); backdrop-filter: blur(12px);
+      border: 1px solid var(--card-border); padding: 8px; border-radius: 14px; margin-bottom: 1.5rem;
       overflow-x: auto;
     }
     .tab-btn {
-      flex: 1;
-      padding: 10px 16px;
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      font-size: 0.9rem;
-      font-weight: 600;
-      border-radius: 10px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      white-space: nowrap;
+      flex: 1; padding: 10px 16px; background: transparent; border: none; color: var(--text-muted);
+      font-size: 0.9rem; font-weight: 600; border-radius: 10px; cursor: pointer; transition: all 0.2s ease; white-space: nowrap;
     }
     .tab-btn.active { background: var(--primary); color: #fff; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
 
-    /* Content Cards */
     .card {
-      background: var(--card-bg);
-      backdrop-filter: blur(12px);
-      border: 1px solid var(--card-border);
-      border-radius: 16px;
-      padding: 1.5rem;
-      margin-bottom: 1.5rem;
+      background: var(--card-bg); backdrop-filter: blur(12px); border: 1px solid var(--card-border);
+      border-radius: 16px; padding: 1.5rem; margin-bottom: 1.5rem;
     }
     .card h3 { font-size: 1.1rem; margin-bottom: 1rem; color: #fff; display: flex; align-items: center; gap: 8px; }
 
-    /* Forms */
     .form-group { margin-bottom: 1.2rem; }
     .form-group label { display: block; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px; font-weight: 500; }
     .form-group input, .form-group textarea, .form-group select {
-      width: 100%;
-      padding: 10px 14px;
-      background: rgba(15, 23, 42, 0.6);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 10px;
-      color: #fff;
-      font-size: 0.9rem;
-      outline: none;
-      transition: all 0.2s ease;
+      width: 100%; padding: 10px 14px; background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 10px; color: #fff;
+      font-size: 0.9rem; outline: none; transition: all 0.2s ease;
     }
     .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+      border-color: var(--primary); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
     }
     .form-row { display: flex; gap: 1rem; flex-wrap: wrap; }
     .form-row .form-group { flex: 1; min-width: 200px; }
 
-    /* Tables */
     .table-responsive { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; text-align: right; }
     th { padding: 12px; color: var(--text-muted); font-size: 0.8rem; border-bottom: 1px solid var(--card-border); font-weight: 600; }
     td { padding: 12px; font-size: 0.85rem; border-bottom: 1px solid rgba(255, 255, 255, 0.04); vertical-align: middle; }
     tr:hover td { background: rgba(255, 255, 255, 0.02); }
 
-    /* Badge & Switches */
     .badge { display: inline-block; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }
     .badge-success { background: rgba(16, 185, 129, 0.15); color: #34d399; }
     .badge-danger { background: rgba(239, 68, 68, 0.15); color: #f87171; }
     .switch-btn { cursor: pointer; user-select: none; }
 
-    /* Tab Panes */
     .tab-pane { display: none; }
     .tab-pane.active { display: block; animation: fadeIn 0.25s ease; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* Toast Notification */
     #toast {
-      position: fixed;
-      bottom: 24px;
-      left: 24px;
-      padding: 12px 20px;
-      border-radius: 12px;
-      background: #1e293b;
-      color: #fff;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      font-size: 0.9rem;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      transform: translateY(100px);
-      opacity: 0;
-      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-      z-index: 9999;
+      position: fixed; bottom: 24px; left: 24px; padding: 12px 20px; border-radius: 12px;
+      background: #1e293b; color: #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      border: 1px solid rgba(255, 255, 255, 0.1); font-size: 0.9rem; display: flex; align-items: center;
+      gap: 10px; transform: translateY(100px); opacity: 0; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); z-index: 9999;
     }
     #toast.show { transform: translateY(0); opacity: 1; }
 
-    /* Modal */
     .modal-overlay {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0, 0, 0, 0.75);
-      backdrop-filter: blur(6px);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 1rem;
-      z-index: 1000;
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(6px); display: none; align-items: center; justify-content: center; padding: 1rem; z-index: 1000;
     }
     .modal-overlay.show { display: flex; animation: fadeIn 0.2s ease; }
     .modal-box {
-      background: #1e293b;
-      border: 1px solid var(--card-border);
-      border-radius: 16px;
-      width: 100%;
-      max-width: 520px;
-      max-height: 90vh;
-      overflow-y: auto;
-      padding: 1.5rem;
+      background: #1e293b; border: 1px solid var(--card-border); border-radius: 16px;
+      width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; padding: 1.5rem;
+    }
+    .section-divider {
+      background: rgba(255, 255, 255, 0.05); padding: 8px 12px; border-radius: 8px; margin: 1rem 0; font-weight: 600; font-size: 0.85rem; color: #93c5fd;
     }
   </style>
 </head>
 <body>
 
 <div class="container">
-  <!-- Header -->
   <div class="header">
     <div class="header-info">
       <div class="header-logo">📊</div>
       <div class="header-title">
         <h1>داشبورد ربات قیمت‌دهی روزانه</h1>
-        <p>نسخه ۴.۵ SPA | اتصال لحظه‌ای به Cloudflare KV</p>
+        <p>نسخه چندمنبعی (Multi-Source & Self-Healing)</p>
       </div>
     </div>
     <div class="header-actions">
@@ -215,7 +137,6 @@ export function renderDashboardSPA(settings) {
     </div>
   </div>
 
-  <!-- Nav Tabs -->
   <div class="nav-tabs">
     <button class="tab-btn active" onclick="switchTab('general')">⚙️ عمومی</button>
     <button class="tab-btn" onclick="switchTab('symbols')">📊 نمادها</button>
@@ -236,7 +157,7 @@ export function renderDashboardSPA(settings) {
           <label>👤 آیدی عددی مدیر تلگرام (جهت دریافت خطاها و هشدارها):</label>
           <input type="text" id="gen-admin-id" required>
         </div>
-        <button type="submit" class="btn btn-primary">💾 ذخیره تغییرات عمومی</button>
+        <button type="submit" class="btn btn-primary">💾 ذخیره تنظیمات عمومی</button>
       </form>
     </div>
   </div>
@@ -253,8 +174,8 @@ export function renderDashboardSPA(settings) {
           <thead>
             <tr>
               <th>نماد و نام</th>
-              <th>نوع منبع</th>
-              <th>واحد</th>
+              <th>منبع اصلی</th>
+              <th>منبع پشتیبان</th>
               <th>وضعیت</th>
               <th>عملیات</th>
             </tr>
@@ -269,15 +190,11 @@ export function renderDashboardSPA(settings) {
   <div id="tab-schedule" class="tab-pane">
     <div class="card">
       <h3>⏰ زمان‌بندی ارسال خودکار (تهران)</h3>
-      <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:1rem;">
-        کرون‌جاب هر ۱۰ دقیقه یک‌بار لیست زیر را چک کرده و در ساعت مقرر پست را به کانال ارسال می‌کند.
-      </p>
       <div class="table-responsive">
         <table>
           <thead>
             <tr>
               <th>ساعت تهران</th>
-              <th>معادل UTC</th>
               <th>وضعیت</th>
               <th>عملیات</th>
             </tr>
@@ -295,7 +212,7 @@ export function renderDashboardSPA(settings) {
     </div>
   </div>
 
-  <!-- TAB 4: CONTENT & LIVE PREVIEW -->
+  <!-- TAB 4: CONTENT -->
   <div id="tab-content" class="tab-pane">
     <div class="card">
       <h3>📝 قالب متن و تصویر پست</h3>
@@ -328,12 +245,14 @@ export function renderDashboardSPA(settings) {
   </div>
 </div>
 
-<!-- Modal: Edit / Add Symbol -->
+<!-- Modal: Symbol Edit/Add with Fallback Support -->
 <div class="modal-overlay" id="symbol-modal">
   <div class="modal-box">
     <h3 id="modal-title" style="margin-bottom:1rem;">افزودن نماد</h3>
     <form id="form-symbol" onsubmit="saveSymbolForm(event)">
       <input type="hidden" id="sym-index">
+      
+      <div class="section-divider">📌 ۱. مشخصات عمومی نماد</div>
       <div class="form-group">
         <label>شناسه یکتا (انگلیسی، بدون فاصله):</label>
         <input type="text" id="sym-id" required placeholder="مثلاً: gold18">
@@ -348,10 +267,12 @@ export function renderDashboardSPA(settings) {
           <input type="text" id="sym-emoji" placeholder="🔸">
         </div>
       </div>
+
+      <div class="section-divider">🌐 ۲. منبع اصلی قیمت (Primary Source)</div>
       <div class="form-row">
         <div class="form-group">
           <label>نوع منبع:</label>
-          <select id="sym-source-type" onchange="handleSourceChange()">
+          <select id="sym-source-type">
             <option value="tgju">TGJU (شبکه طلا و ارز)</option>
             <option value="nobitex">نوبیتکس (Nobitex API)</option>
             <option value="emofid">ایموفید (صندوق‌ها)</option>
@@ -359,7 +280,7 @@ export function renderDashboardSPA(settings) {
           </select>
         </div>
         <div class="form-group">
-          <label>واحد منبع:</label>
+          <label>واحد منبع اصلی:</label>
           <select id="sym-is-rial">
             <option value="true">ریال (تبدیل به تومان)</option>
             <option value="false">تومان (بدون تغییر)</option>
@@ -367,13 +288,44 @@ export function renderDashboardSPA(settings) {
         </div>
       </div>
       <div class="form-group">
-        <label id="sym-slug-label">اسلاگ TGJU:</label>
-        <input type="text" id="sym-source-slug" required placeholder="مثلاً: geram18">
+        <label>اسلاگ TGJU یا آدرس URL کامل:</label>
+        <input type="text" id="sym-source-slug" required placeholder="مثلاً geram18 یا USDTIRT یا URL">
       </div>
       <div class="form-group">
         <label>لیبل جستجو در صفحه:</label>
-        <input type="text" id="sym-label" placeholder="مثلاً: نرخ فعلی">
+        <input type="text" id="sym-label" placeholder="مثلاً: نرخ فعلی / آخرین قیمت">
       </div>
+
+      <div class="section-divider">🔄 ۳. منبع پشتیبان در صورت خطا (Fallback Source)</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>نوع منبع پشتیبان:</label>
+          <select id="sym-fallback-type">
+            <option value="none">بدون منبع پشتیبان</option>
+            <option value="tgju">TGJU</option>
+            <option value="nobitex">نوبیتکس</option>
+            <option value="emofid">ایموفید</option>
+            <option value="custom">صفحه سفارشی</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>واحد منبع پشتیبان:</label>
+          <select id="sym-fallback-is-rial">
+            <option value="true">ریال (تبدیل به تومان)</option>
+            <option value="false">تومان (بدون تغییر)</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>اسلاگ پشتیبان یا URL:</label>
+        <input type="text" id="sym-fallback-slug" placeholder="مثلاً gc3 برای عیار یا crypto-tether برای تتر">
+      </div>
+      <div class="form-group">
+        <label>لیبل جستجو در منبع پشتیبان:</label>
+        <input type="text" id="sym-fallback-label" placeholder="مثلاً: نرخ فعلی یا قیمت ریالی">
+      </div>
+
+      <div class="section-divider">🛡️ ۴. اعتبارسنجی بازه قیمت</div>
       <div class="form-row">
         <div class="form-group">
           <label>حداقل قیمت مجاز (تومان):</label>
@@ -384,6 +336,7 @@ export function renderDashboardSPA(settings) {
           <input type="number" id="sym-max" required>
         </div>
       </div>
+
       <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:1.5rem;">
         <button type="button" class="btn btn-secondary" onclick="closeSymbolModal()">انصراف</button>
         <button type="submit" class="btn btn-primary">💾 ذخیره نماد</button>
@@ -392,7 +345,6 @@ export function renderDashboardSPA(settings) {
   </div>
 </div>
 
-<!-- Toast Box -->
 <div id="toast">🔔 <span id="toast-text"></span></div>
 
 <script>
@@ -418,8 +370,8 @@ export function renderDashboardSPA(settings) {
     tbody.innerHTML = state.symbols.map((s, i) => \`
       <tr>
         <td><strong>\${s.emoji || "📌"} \${s.name}</strong> <span style="font-size:0.75rem; color:var(--text-muted);">(\${s.id})</span></td>
-        <td><span class="badge" style="background:rgba(255,255,255,0.08);">\${s.source_type}</span></td>
-        <td>\${s.is_rial ? "ریال" : "تومان"}</td>
+        <td><span class="badge" style="background:rgba(255,255,255,0.08);">\${s.source_type} / \${s.source_slug}</span></td>
+        <td><span class="badge" style="background:rgba(255,255,255,0.05); color:#94a3b8;">\${s.fallback_type && s.fallback_type !== 'none' ? s.fallback_type + ' (' + s.fallback_slug + ')' : 'ندارد'}</span></td>
         <td>
           <span class="badge \${s.enabled ? 'badge-success switch-btn' : 'badge-danger switch-btn'}" onclick="toggleSymbol(\${i})">
             \${s.enabled ? "فعال ✅" : "غیرفعال ❌"}
@@ -438,7 +390,6 @@ export function renderDashboardSPA(settings) {
     tbody.innerHTML = state.schedules.map((sch, i) => \`
       <tr>
         <td><strong>⏰ \${sch.time}</strong></td>
-        <td style="color:var(--text-muted)">\${sch.time}</td>
         <td>
           <span class="badge \${sch.enabled ? 'badge-success switch-btn' : 'badge-danger switch-btn'}" onclick="toggleSchedule(\${i})">
             \${sch.enabled ? "فعال ✅" : "غیرفعال ❌"}
@@ -485,7 +436,7 @@ export function renderDashboardSPA(settings) {
     const updated = { ...state };
     updated.channel_id = document.getElementById("gen-channel-id").value.trim();
     updated.admin_id = document.getElementById("gen-admin-id").value.trim();
-    syncSettings(updated, "تنظیمات عمومی با موفقیت ذخیره شد");
+    syncSettings(updated, "تنظیمات عمومی ذخیره شد");
   }
 
   function saveContent(e) {
@@ -493,7 +444,7 @@ export function renderDashboardSPA(settings) {
     const updated = { ...state };
     updated.photo_url = document.getElementById("cnt-photo-url").value.trim();
     updated.caption_template = document.getElementById("cnt-caption-template").value;
-    syncSettings(updated, "محتوا و قالب با موفقیت ذخیره شد");
+    syncSettings(updated, "محتوا ذخیره شد");
   }
 
   function toggleSymbol(idx) {
@@ -506,7 +457,7 @@ export function renderDashboardSPA(settings) {
     if (!confirm("آیا از حذف این نماد اطمینان دارید؟")) return;
     const updated = { ...state };
     updated.symbols.splice(idx, 1);
-    syncSettings(updated, "نماد با موفقیت حذف شد");
+    syncSettings(updated, "نماد حذف شد");
   }
 
   function openSymbolModal(idx) {
@@ -522,6 +473,10 @@ export function renderDashboardSPA(settings) {
       document.getElementById("sym-source-slug").value = "";
       document.getElementById("sym-label").value = "نرخ فعلی";
       document.getElementById("sym-is-rial").value = "true";
+      document.getElementById("sym-fallback-type").value = "none";
+      document.getElementById("sym-fallback-slug").value = "";
+      document.getElementById("sym-fallback-label").value = "";
+      document.getElementById("sym-fallback-is-rial").value = "true";
       document.getElementById("sym-min").value = 0;
       document.getElementById("sym-max").value = 999999999;
     } else {
@@ -535,28 +490,18 @@ export function renderDashboardSPA(settings) {
       document.getElementById("sym-source-slug").value = s.source_slug;
       document.getElementById("sym-label").value = s.label || "";
       document.getElementById("sym-is-rial").value = String(s.is_rial);
+      document.getElementById("sym-fallback-type").value = s.fallback_type || "none";
+      document.getElementById("sym-fallback-slug").value = s.fallback_slug || "";
+      document.getElementById("sym-fallback-label").value = s.fallback_label || "";
+      document.getElementById("sym-fallback-is-rial").value = String(s.fallback_is_rial !== false);
       document.getElementById("sym-min").value = s.min;
       document.getElementById("sym-max").value = s.max;
     }
-    handleSourceChange();
     modal.classList.add("show");
   }
 
   function closeSymbolModal() {
     document.getElementById("symbol-modal").classList.remove("show");
-  }
-
-  function handleSourceChange() {
-    const type = document.getElementById("sym-source-type").value;
-    const label = document.getElementById("sym-slug-label");
-    const slugInput = document.getElementById("sym-source-slug");
-    if (type === "tgju") {
-      label.innerText = "اسلاگ TGJU (مثال: geram18):";
-      slugInput.placeholder = "geram18";
-    } else {
-      label.innerText = "آدرس URL کامل منبع یا جفت‌ارز:";
-      slugInput.placeholder = type === "nobitex" ? "USDTIRT" : "https://...";
-    }
   }
 
   function saveSymbolForm(e) {
@@ -570,6 +515,10 @@ export function renderDashboardSPA(settings) {
       source_slug: document.getElementById("sym-source-slug").value.trim(),
       label: document.getElementById("sym-label").value.trim(),
       is_rial: document.getElementById("sym-is-rial").value === "true",
+      fallback_type: document.getElementById("sym-fallback-type").value,
+      fallback_slug: document.getElementById("sym-fallback-slug").value.trim(),
+      fallback_label: document.getElementById("sym-fallback-label").value.trim(),
+      fallback_is_rial: document.getElementById("sym-fallback-is-rial").value === "true",
       min: Number(document.getElementById("sym-min").value) || 0,
       max: Number(document.getElementById("sym-max").value) || 999999999,
       enabled: idx === "new" ? true : state.symbols[idx].enabled
@@ -582,7 +531,7 @@ export function renderDashboardSPA(settings) {
       updated.symbols[Number(idx)] = symObj;
     }
     closeSymbolModal();
-    syncSettings(updated, "نماد با موفقیت ذخیره شد");
+    syncSettings(updated, "نماد ذخیره شد");
   }
 
   function addSchedule() {
@@ -602,7 +551,7 @@ export function renderDashboardSPA(settings) {
   function deleteSchedule(idx) {
     const updated = { ...state };
     updated.schedules.splice(idx, 1);
-    syncSettings(updated, "زمان با موفقیت حذف شد");
+    syncSettings(updated, "زمان حذف شد");
   }
 
   async function triggerManualSend() {
@@ -651,7 +600,6 @@ export function renderDashboardSPA(settings) {
     }
   }
 
-  // مقداردهی اولیه
   initFormValues();
 </script>
 </body>
