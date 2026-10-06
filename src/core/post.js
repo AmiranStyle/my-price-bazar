@@ -1,28 +1,24 @@
 // ==========================================
-// 📬 ساخت و ارسال پست به کانال
+// 📬 تولید و انتشار پست کانال
 // ==========================================
 
 import { formatFa } from '../utils/helpers.js';
 import { getTehranDateTime } from '../utils/datetime.js';
 import { fetchAllPrices } from '../services/priceEngine.js';
-import { getDefaultSettings } from '../config/defaults.js';
 
-// ساخت متن کپشن با قیمت‌های لحظه‌ای
 export async function generateCaption(settings, priceResults) {
   const { dateStr, timeStr } = getTehranDateTime();
 
-  // ساخت بخش قیمت‌ها از روی نمادهای فعال
   const priceLines = priceResults
     .filter(r => r.price !== null)
     .map(r => `${r.symbol.emoji || "📌"} <b>${r.symbol.name}:</b> ${formatFa(r.price)} تومان`)
     .join("\n");
 
   if (!priceLines) {
-    throw new Error("هیچ قیمتی با موفقیت دریافت نشد.");
+    throw new Error("هیچ‌کدام از نمادهای فعال موفق به دریافت قیمت نشدند.");
   }
 
-  // جایگزینی متغیرها در قالب کپشن
-  let caption = settings.caption_template || getDefaultSettings().caption_template;
+  let caption = settings.caption_template || "";
   caption = caption
     .replace(/\{date\}/g, dateStr)
     .replace(/\{time\}/g, timeStr)
@@ -32,9 +28,8 @@ export async function generateCaption(settings, priceResults) {
   return caption;
 }
 
-// ارسال عکس + کپشن به کانال
 export async function sendPostToChannel(botToken, settings) {
-  if (!botToken) throw new Error("BOT_TOKEN تنظیم نشده است.");
+  if (!botToken) throw new Error("BOT_TOKEN یافت نشد.");
 
   const priceResults = await fetchAllPrices(settings);
   const caption = await generateCaption(settings, priceResults);
