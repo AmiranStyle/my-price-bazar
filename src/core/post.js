@@ -28,10 +28,11 @@ export async function generateCaption(settings, priceResults) {
   return caption;
 }
 
-export async function sendPostToChannel(botToken, settings) {
+export async function sendPostToChannel(botToken, settings, env = null) {
   if (!botToken) throw new Error("BOT_TOKEN یافت نشد.");
 
-  const priceResults = await fetchAllPrices(settings);
+  // پاس دادن env جهت ارسال خطاهای احتمالی به پی‌وی ادمین
+  const priceResults = await fetchAllPrices(settings, env);
   const caption = await generateCaption(settings, priceResults);
 
   const payload = {
