@@ -1,11 +1,10 @@
 // ==========================================
-// 📈 موتور قیمت‌گیری داینامیک
+// 📈 موتور قیمت‌گیری داینامیک و هوشمند
 // ==========================================
 
 import { BROWSER_HEADERS, htmlToText, extractNumberAfterLabel } from '../utils/html.js';
 import { parseNumber, rialToToman } from '../utils/helpers.js';
 
-// دریافت قیمت از TGJU
 async function fetchFromTGJU(slug, label) {
   const response = await fetch(`https://www.tgju.org/profile/${slug}`, {
     method: "GET",
@@ -14,12 +13,11 @@ async function fetchFromTGJU(slug, label) {
   if (!response.ok) throw new Error(`TGJU HTTP ${response.status}`);
   const html = await response.text();
   const text = htmlToText(html);
-  const price = extractNumberAfterLabel(text, label, 100);
+  const price = extractNumberAfterLabel(text, label || "نرخ فعلی", 100);
   if (!price) throw new Error(`لیبل "${label}" در TGJU/${slug} پیدا نشد.`);
   return price;
 }
 
-// دریافت قیمت از Nobitex API
 async function fetchFromNobitex(symbol) {
   const response = await fetch(`https://api.nobitex.ir/v2/orderbook/${symbol}`, {
     method: "GET",
@@ -32,7 +30,6 @@ async function fetchFromNobitex(symbol) {
   return price;
 }
 
-// دریافت قیمت از Emofid
 async function fetchFromEmofid(url, label) {
   const response = await fetch(url, {
     method: "GET",
@@ -43,13 +40,13 @@ async function fetchFromEmofid(url, label) {
   const text = htmlToText(html);
   const price =
     extractNumberAfterLabel(text, label, 100) ||
+    extractNumberAfterLabel(text, "قیمت آخرین معامله", 100) ||
     extractNumberAfterLabel(text, "قیمت هر واحد", 100) ||
     extractNumberAfterLabel(text, "آخرین قیمت", 100);
-  if (!price) throw new Error(`لیبل "${label}" در Emofid پیدا نشد.`);
+  if (!price) throw new Error(`لیبل "${label}" در صفحه ایموفید پیدا نشد.`);
   return price;
 }
 
-// دریافت قیمت از صفحه سفارشی
 async function fetchFromCustom(url, label) {
   const response = await fetch(url, {
     method: "GET",
@@ -63,7 +60,6 @@ async function fetchFromCustom(url, label) {
   return price;
 }
 
-// تابع اصلی دریافت قیمت یک نماد
 export async function fetchSymbolPrice(symbol) {
   try {
     if (!symbol.enabled) return null;
@@ -72,13 +68,13 @@ export async function fetchSymbolPrice(symbol) {
 
     switch (symbol.source_type) {
       case "tgju":
-        rawPrice = await fetchFromTGJU(symbol.source_slug, symbol.label || "نرخ فعلی");
+        rawPrice = await fetchFromTGJU(symbol.source_slug, symbol.label);
         break;
       case "nobitex":
         rawPrice = await fetchFromNobitex(symbol.source_slug);
         break;
       case "emofid":
-        rawPrice = await fetchFromEmofid(symbol.source_slug, symbol.label || "قیمت هر واحد");
+        rawPrice = await fetchFromEmofid(symbol.source_slug, symbol.label);
         break;
       case "custom":
         rawPrice = await fetchFromCustom(symbol.source_slug, symbol.label);
@@ -87,12 +83,10 @@ export async function fetchSymbolPrice(symbol) {
         throw new Error(`نوع منبع ناشناخته: ${symbol.source_type}`);
     }
 
-    // تبدیل ریال به تومان در صورت نیاز
     let finalPrice = symbol.is_rial ? rialToToman(rawPrice) : parseNumber(rawPrice);
 
-    // اعتبارسنجی محدوده
     if (!finalPrice || finalPrice < symbol.min || finalPrice > symbol.max) {
-      throw new Error(`قیمت خارج از محدوده مجاز: ${finalPrice}`);
+      throw new Error(`قیمت خارج از محدوده مجاز (${symbol.min} تا ${symbol.max}): ${finalPrice}`);
     }
 
     return finalPrice;
@@ -102,7 +96,6 @@ export async function fetchSymbolPrice(symbol) {
   }
 }
 
-// دریافت قیمت همه نمادها
 export async function fetchAllPrices(settings) {
   const activeSymbols = settings.symbols.filter(s => s.enabled);
   const results = await Promise.all(
