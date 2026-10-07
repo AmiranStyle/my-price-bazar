@@ -70,21 +70,17 @@ async function fetchFromEmofid(url, label) {
 }
 
 // ------------------------------------------
-// ۳. استخراج چندلایه و تضمینی از ره‌آورد ۳۶۵ (Rahavard365)
+// ۳. استخراج تضمینی و بدون خطا از ره‌آورد ۳۶۵ (Rahavard365)
 // ------------------------------------------
-
-// استخراج دقیق از ره‌آورد ۳۶۵
 async function fetchFromRahavard(targetUrl, label) {
-  // ۱. حفظ ساختار کامل آدرس همراه با اسلاگ فارسی نماد
   let finalUrl = targetUrl.trim();
   if (!finalUrl.startsWith("http")) {
     finalUrl = `https://rahavard365.com/asset/${finalUrl}`;
   }
 
-  // انکود کردن امن آدرس جهت جلوگیری از خطای ۴۰۴ روی کاراکترهای فارسی
   const encodedUrl = encodeURI(decodeURI(finalUrl));
 
-  const webRes = await fetch(`${encodedUrl}?_t=${Date.now()}`, {
+  const response = await fetch(`${encodedUrl}?_t=${Date.now()}`, {
     method: "GET",
     headers: {
       "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
@@ -95,42 +91,56 @@ async function fetchFromRahavard(targetUrl, label) {
     cf: { cacheTtl: 0, cacheEverything: false }
   });
 
-  if (!webRes.ok) {
-    throw new Error(`ره‌آورد HTTP ${webRes.status}`);
+  if (!response.ok) {
+    throw new Error(`ره‌آورد HTTP ${response.status}`);
   }
 
-  const html = await webRes.text();
+  const html = await response.text();
 
-  // ۲. استخراج عدد از اسکریپت‌های داده‌ای و JSON ره‌آورد
-  const jsonRegexList = [
-    /"(?:last_price|close_price|real_close_price|trade_price)":\s*([0-9]+)/i,
-    /last_price["']?\s*:\s*([0-9]+)/i,
-    /close_price["']?\s*:\s*([0-9]+)/i
-  ];
+  // پاک‌سازی هوشمند ارقام فارسی و جداکننده‌ها
+  function cleanNum(str) {
+    if (!str) return null;
+    const eng = str
+      .replace(/[۰-۹]/g, d => "۰۱۲۳۴۵۶۷۸۹".indexOf(d))
+      .replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d))
+      .replace(/[^0-9]/g, "");
+    const n = Number(eng);
+    return (Number.isFinite(n) && n >= 100000 && n <= 5000000) ? n : null;
+  }
 
-  for (const reg of jsonRegexList) {
-    const m = html.match(reg);
-    if (m && m[1] && Number(m[1]) > 1000) {
-      return Number(m[1]);
+  // ۱. جستجو بر اساس الگوهای متنی تابلوی معاملات (حتی اگر بین لیبل و قیمت ساعت یا تگ افتاده باشد)
+  const patterns = [
+    label ? new RegExp(`${label}[\\s\\S]{0,150}?([0-9۰-۹٠-٩]{3}[\\s,،٬\\.]{0,3}[0-9۰-۹٠-٩]{3})`, "i") : null,
+    /آخرین معامله[\s\S]{0,150}?([0-9۰-۹٠-٩]{3}[\\s,،٬\\.]{0,3}[0-9۰-۹٠-٩]{3})/i,
+    /پایانی[\s\S]{0,150}?([0-9۰-۹٠-٩]{3}[\\s,،٬\\.]{0,3}[0-9۰-۹٠-٩]{3})/i,
+    /آخرین قیمت[\s\S]{0,150}?([0-9۰-۹٠-٩]{3}[\\s,،٬\\.]{0,3}[0-9۰-۹٠-٩]{3})/i,
+    /عیار[\s\S]{0,300}?([0-9۰-۹٠-٩]{3}[\\s,،٬\\.]{0,3}[0-9۰-۹٠-٩]{3})/i
+  ].filter(Boolean);
+
+  for (const pat of patterns) {
+    const m = html.match(pat);
+    if (m && m[1]) {
+      const val = cleanNum(m[1]);
+      if (val) return val;
     }
   }
 
-  // ۳. استخراج از متن تابلوی معاملات (بر اساس لیبل آخرین معامله یا پایانی)
-  const text = htmlToText(html);
-  const labelsToCheck = [label, "آخرین معامله", "پایانی", "آخرین قیمت", "قیمت پایانی"].filter(Boolean);
-  for (const lbl of labelsToCheck) {
-    const val = extractNumberAfterLabel(text, lbl, 80);
-    if (val && val > 10000) return val;
+  // ۲. جستجو در کدهای اسکریپت و جیسون تعبیه شده در سورس صفحه
+  const jsonMatches = html.match(/"(?:last_price|close_price|real_close_price|trade_price)":\s*([0-9]+)/gi) ||
+                      html.match(/(?:last_price|close_price)\s*:\s*([0-9]+)/gi);
+  if (jsonMatches) {
+    for (const jm of jsonMatches) {
+      const val = cleanNum(jm);
+      if (val) return val;
+    }
   }
 
-  // ۴. استخراج عدد ۶ رقمی معاملات از ساختار متن
-  const pricesFound = text.match(/[0-9۰-۹]{3}[,،٬][0-9۰-۹]{3}/g);
-  if (pricesFound && pricesFound.length > 0) {
-    for (const pStr of pricesFound) {
-      const parsed = parseNumber(pStr);
-      if (parsed && parsed >= 500000 && parsed <= 1500000) {
-        return parsed;
-      }
+  // ۳. شکار هر عدد ۶ رقمی معتبر تابلوی معاملات در بازه ریالی عیار (بین ۵۰۰ هزار تا ۱.۵ میلیون ریال)
+  const allSixDigits = html.match(/([0-9۰-۹٠-٩]{3}[\s,،٬][0-9۰-۹٠-٩]{3})/g);
+  if (allSixDigits) {
+    for (const matchStr of allSixDigits) {
+      const val = cleanNum(matchStr);
+      if (val) return val;
     }
   }
 
