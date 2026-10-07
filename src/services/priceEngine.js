@@ -1,6 +1,6 @@
 // ==========================================
 // 📈 موتور قیمت‌گیری داینامیک، چندمنبعی و خودترمیم
-// پشتیبانی کامل از: Emofid, TGJU, Nobitex, TSETMC, Rahavard365, Custom
+// پشتیبانی کامل از: Emofid, TGJU, Nobitex, TSETMC, Rahavard365 (Chart API), Custom
 // ==========================================
 
 import { BROWSER_HEADERS, htmlToText, extractNumberAfterLabel } from '../utils/html.js';
@@ -70,50 +70,68 @@ async function fetchFromEmofid(url, label) {
 }
 
 // ------------------------------------------
-// ۳. استخراج اختصاصی از ای‌پی‌آی ره‌آورد ۳۶۵ (Rahavard365 API)
+// ۳. استخراج قیمت لحظه‌ای از اندپوینت چارت ره‌آورد ۳۶۵ (light-bars)
 // ------------------------------------------
 async function fetchFromRahavard(targetUrl) {
-  const decoded = decodeURIComponent(targetUrl);
-  const matchId = decoded.match(/asset\/(\d+)/i) || decoded.match(/(\d+)/);
+  const decoded = decodeURIComponent(targetUrl).trim();
+  const matchId = decoded.match(/asset[\/:](\d+)/i) || decoded.match(/(\d+)/);
   const assetId = matchId ? matchId[1] : "4475";
 
-  const endpoints = [
-    `https://rahavard365.com/api/v2/asset/${assetId}`,
-    `https://rahavard365.com/api/asset/${assetId}`
-  ];
+  const chartEndpoints = [];
+  // اگر لینک مستقیم API چارت وارد شده بود، اولویت اول با همان لینک است
+  if (decoded.includes("chart") && decoded.includes("bars")) {
+    chartEndpoints.push(decoded);
+  }
+
+  chartEndpoints.push(
+    `https://rahavard365.com/api/v2/chart/light-bars?symbol=exchange.asset:${assetId}:real_time&exchange_id=1`,
+    `https://rahavard365.com/api/v2/chart/light-bars?symbol=asset:${assetId}:real_time&exchange_id=1`,
+    `https://rahavard365.com/api/v2/chart/light-bars?symbol=exchange.asset:${assetId}:close&exchange_id=1`,
+    `https://rahavard365.com/api/v2/chart/light_bars?symbol=asset:${assetId}:real_time&exchange_id=1`
+  );
 
   let lastError = "";
 
-  for (const apiUrl of endpoints) {
+  for (const endpoint of chartEndpoints) {
     try {
-      const response = await fetch(`${apiUrl}?_t=${Date.now()}`, {
+      const sep = endpoint.includes("?") ? "&" : "?";
+      const res = await fetch(`${endpoint}${sep}_t=${Date.now()}`, {
         method: "GET",
         headers: {
           "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-          "Accept": "application/json, text/plain, */*",
-          "Accept-Language": "fa-IR,fa;q=0.9,en;q=0.8",
-          "Referer": `https://rahavard365.com/asset/${assetId}/`
+          "Accept": "application/json",
+          "Accept-Language": "fa-IR,fa;q=0.9,en-US;q=0.8,en;q=0.7",
+          "Referer": `https://rahavard365.com/asset/${assetId}`
         },
         cf: { cacheTtl: 0, cacheEverything: false }
       });
 
-      if (response.ok) {
-        const json = await response.json();
-        const d = json?.data || json?.result || json;
-        const price = d?.last_price || d?.close_price || d?.real_close_price;
-
-        if (price && Number(price) > 1000) {
-          return Number(price);
-        }
-      } else {
-        lastError = `HTTP ${response.status}`;
+      if (!res.ok) {
+        lastError = `HTTP ${res.status}`;
+        continue;
       }
-    } catch (e) {
-      lastError = e.message;
+
+      const json = await res.json();
+      
+      // پشتیبانی از آرایه مستقیم یا آرایه داخل فیلد data/bars
+      const bars = Array.isArray(json)
+        ? json
+        : (Array.isArray(json?.data) ? json.data : (Array.isArray(json?.bars) ? json.bars : null));
+
+      if (bars && bars.length > 0) {
+        const lastItem = bars[bars.length - 1];
+        const closePrice = lastItem?.close ?? lastItem?.c ?? lastItem?.price;
+
+        if (closePrice && Number(closePrice) > 1000) {
+          return Number(closePrice);
+        }
+      }
+    } catch (err) {
+      lastError = err.message;
     }
   }
 
-  throw new Error(`ره‌آورد ۳۶۵ پاسخ نداد (${lastError})`);
+  throw new Error(`خطا در دریافت چارت ره‌آورد (${lastError || 'آرایه خالی'})`);
 }
 
 // ------------------------------------------
@@ -180,8 +198,7 @@ export async function executeSingleSource(source) {
   const target = source.target || "";
   const label = source.label || "";
 
-  // تشخیص خودکار ره‌آورد چه کاربر type را rahavard بگذارد و چه لینک را در custom بنویسد
-  if (type === "rahavard" || (target && target.includes("rahavard365.com"))) {
+  if (type === "rahavard" || (target && target.includes("rahavard"))) {
     return await fetchFromRahavard(target);
   }
 
