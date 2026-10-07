@@ -1,11 +1,11 @@
 // ==========================================
-// 📅 ابزارهای تاریخ و زمان تهران (چینش دقیق فارسی)
+// 📅 ابزارهای تاریخ و زمان تهران (راست‌به‌چپ استاندارد)
 // ==========================================
 
 export function getTehranDateTime() {
   const now = new Date();
 
-  // ۱. استخراج مجزای اجزای تاریخ شمسی با formatToParts برای کنترل دقیق چیدمان
+  // استخراج جداگانه اجزا جهت جلوگیری از معکوس شدن سال و روز
   const dateFormatter = new Intl.DateTimeFormat("fa-IR-u-ca-persian", {
     timeZone: "Asia/Tehran",
     weekday: "long",
@@ -15,10 +15,7 @@ export function getTehranDateTime() {
   });
 
   const parts = dateFormatter.formatToParts(now);
-  let weekday = "";
-  let day = "";
-  let month = "";
-  let year = "";
+  let weekday = "", day = "", month = "", year = "";
 
   for (const part of parts) {
     if (part.type === "weekday") weekday = part.value;
@@ -28,10 +25,9 @@ export function getTehranDateTime() {
   }
 
   // چیدمان استاندارد فارسی: سه‌شنبه ۱۶ آذر ۱۴۰۵
-  // افزودن کاراکتر کنترل جهت راست‌به‌چپ (\u200F) جهت تثبیت در تلگرام
   const dateStr = `\u200F${weekday} ${day} ${month} ${year}\u200F`.trim();
 
-  // ۲. استخراج ساعت رسمی تهران با اعداد فارسی
+  // استخراج ساعت رسمی تهران
   const timeFormatter = new Intl.DateTimeFormat("fa-IR", {
     timeZone: "Asia/Tehran",
     hour: "2-digit",
@@ -44,7 +40,6 @@ export function getTehranDateTime() {
   return { dateStr, timeStr };
 }
 
-// تبدیل زمان تهران به ساعت UTC برای کرون‌جاب
 export function tehranTimeToUTC(timeStr) {
   const [h, m] = timeStr.split(":").map(Number);
   let utcH = h - 3;
