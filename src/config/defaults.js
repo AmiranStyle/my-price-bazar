@@ -1,5 +1,5 @@
 // ==========================================
-// ⚙️ تنظیمات پیش‌فرض با منابع مطمئن
+// ⚙️ تنظیمات پیش‌فرض با ساختار چندمنبعی (Dynamic Sources)
 // ==========================================
 
 export function getDefaultSettings(env = {}) {
@@ -18,49 +18,38 @@ export function getDefaultSettings(env = {}) {
         id: "gold18",
         name: "طلای ۱۸ عیار",
         emoji: "🔸",
-        source_type: "tgju",
-        source_slug: "geram18",
-        label: "نرخ فعلی",
-        is_rial: true,
-        fallback_type: "none",
-        fallback_slug: "",
-        fallback_label: "",
-        fallback_is_rial: true,
         min: 1000000,
         max: 150000000,
-        enabled: true
+        enabled: true,
+        sources: [
+          { type: "tgju", target: "geram18", label: "نرخ فعلی", is_rial: true }
+        ]
       },
       {
         id: "usdt",
         name: "تتر (USDT)",
         emoji: "🟢",
-        source_type: "nobitex",
-        source_slug: "USDTIRT",
-        label: "",
-        is_rial: true,
-        fallback_type: "tgju",
-        fallback_slug: "crypto-tether",
-        fallback_label: "قیمت ریالی",
-        fallback_is_rial: true,
         min: 20000,
         max: 500000,
-        enabled: true
+        enabled: true,
+        sources: [
+          { type: "nobitex", target: "USDTIRT", label: "", is_rial: true },
+          { type: "tgju", target: "crypto-tether", label: "قیمت ریالی", is_rial: true }
+        ]
       },
       {
         id: "ayar",
         name: "صندوق عیار",
         emoji: "🔹",
-        source_type: "tgju",
-        source_slug: "gc3",
-        label: "نرخ فعلی",
-        is_rial: true,
-        fallback_type: "emofid",
-        fallback_slug: "https://www.emofid.com/funds/ayar/",
-        fallback_label: "آخرین قیمت",
-        fallback_is_rial: true,
         min: 10000,
         max: 500000,
-        enabled: true
+        enabled: true,
+        sources: [
+          { type: "emofid", target: "https://www.emofid.com/funds/ayar/", label: "قیمت صدور", is_rial: true },
+          { type: "tgju", target: "gc3", label: "نرخ فعلی", is_rial: true },
+          { type: "tgju", target: "ime_fund_ayar", label: "نرخ فعلی", is_rial: true },
+          { type: "tsetmc", target: "IRO9AYAR0001", label: "", is_rial: true }
+        ]
       }
     ],
     schedules: [
