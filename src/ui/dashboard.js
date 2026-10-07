@@ -1,5 +1,5 @@
 // ==========================================
-// 🚀 داشبورد مدرن تک‌صفحه‌ای (SPA - Multi-Source Dashboard)
+// 🚀 داشبورد مدرن تک‌صفحه‌ای با مدیریت بی‌نهایت منبع و تست مجزا
 // ==========================================
 
 export function renderDashboardSPA(settings) {
@@ -26,7 +26,7 @@ export function renderDashboardSPA(settings) {
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Vazirmatn, Tahoma, sans-serif; }
     body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 1.5rem; }
-    .container { max-width: 960px; margin: 0 auto; }
+    .container { max-width: 980px; margin: 0 auto; }
     
     .header {
       display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;
@@ -50,6 +50,7 @@ export function renderDashboardSPA(settings) {
     .btn-danger { background: var(--danger); }
     .btn-warning { background: var(--warning); color: #000; }
     .btn-secondary { background: rgba(255, 255, 255, 0.1); color: var(--text); }
+    .btn-info { background: #06b6d4; color: #fff; }
     .btn-sm { padding: 5px 10px; font-size: 0.75rem; border-radius: 8px; }
 
     .nav-tabs {
@@ -80,7 +81,7 @@ export function renderDashboardSPA(settings) {
       border-color: var(--primary); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
     }
     .form-row { display: flex; gap: 1rem; flex-wrap: wrap; }
-    .form-row .form-group { flex: 1; min-width: 200px; }
+    .form-row .form-group { flex: 1; min-width: 160px; }
 
     .table-responsive { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; text-align: right; }
@@ -112,10 +113,14 @@ export function renderDashboardSPA(settings) {
     .modal-overlay.show { display: flex; animation: fadeIn 0.2s ease; }
     .modal-box {
       background: #1e293b; border: 1px solid var(--card-border); border-radius: 16px;
-      width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; padding: 1.5rem;
+      width: 100%; max-width: 680px; max-height: 90vh; overflow-y: auto; padding: 1.5rem;
     }
-    .section-divider {
-      background: rgba(255, 255, 255, 0.05); padding: 8px 12px; border-radius: 8px; margin: 1rem 0; font-weight: 600; font-size: 0.85rem; color: #93c5fd;
+    .source-item {
+      background: rgba(15, 23, 42, 0.6); border: 1px solid var(--card-border); border-radius: 12px;
+      padding: 12px; margin-bottom: 12px; position: relative;
+    }
+    .source-item-header {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 0.85rem; font-weight: 600; color: #93c5fd;
     }
   </style>
 </head>
@@ -127,12 +132,12 @@ export function renderDashboardSPA(settings) {
       <div class="header-logo">📊</div>
       <div class="header-title">
         <h1>داشبورد ربات قیمت‌دهی روزانه</h1>
-        <p>نسخه چندمنبعی (Multi-Source & Self-Healing)</p>
+        <p>معماری بی‌نهایت منبع (Dynamic Sources & Multi-Test)</p>
       </div>
     </div>
     <div class="header-actions">
       <button class="btn btn-success" onclick="triggerManualSend()">📤 ارسال آنی</button>
-      <button class="btn btn-primary" onclick="testPricesApi()">🧪 تست قیمت‌ها</button>
+      <button class="btn btn-primary" onclick="testPricesApi()">🧪 تست همه قیمت‌ها</button>
       <a href="/logout" class="btn btn-danger">🚪 خروج</a>
     </div>
   </div>
@@ -166,7 +171,7 @@ export function renderDashboardSPA(settings) {
   <div id="tab-symbols" class="tab-pane">
     <div class="card">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-        <h3>📊 لیست نمادهای پایش قیمت</h3>
+        <h3>📊 لیست نمادها و منابع آبشاری</h3>
         <button class="btn btn-success btn-sm" onclick="openSymbolModal('new')">➕ افزودن نماد جدید</button>
       </div>
       <div class="table-responsive">
@@ -174,8 +179,7 @@ export function renderDashboardSPA(settings) {
           <thead>
             <tr>
               <th>نماد و نام</th>
-              <th>منبع اصلی</th>
-              <th>منبع پشتیبان</th>
+              <th>تعداد منابع فعال</th>
               <th>وضعیت</th>
               <th>عملیات</th>
             </tr>
@@ -245,87 +249,28 @@ export function renderDashboardSPA(settings) {
   </div>
 </div>
 
-<!-- Modal: Symbol Edit/Add with Fallback Support -->
+<!-- Modal: Symbol Edit/Add with Dynamic Multiple Sources -->
 <div class="modal-overlay" id="symbol-modal">
   <div class="modal-box">
-    <h3 id="modal-title" style="margin-bottom:1rem;">افزودن نماد</h3>
+    <h3 id="modal-title" style="margin-bottom:1rem;">ویرایش نماد</h3>
     <form id="form-symbol" onsubmit="saveSymbolForm(event)">
       <input type="hidden" id="sym-index">
       
-      <div class="section-divider">📌 ۱. مشخصات عمومی نماد</div>
       <div class="form-group">
         <label>شناسه یکتا (انگلیسی، بدون فاصله):</label>
-        <input type="text" id="sym-id" required placeholder="مثلاً: gold18">
+        <input type="text" id="sym-id" required placeholder="مثلاً: ayar">
       </div>
       <div class="form-row">
         <div class="form-group">
           <label>نام فارسی:</label>
-          <input type="text" id="sym-name" required placeholder="مثلاً: طلای ۱۸ عیار">
+          <input type="text" id="sym-name" required placeholder="مثلاً: صندوق عیار">
         </div>
         <div class="form-group" style="max-width:100px;">
           <label>ایموجی:</label>
-          <input type="text" id="sym-emoji" placeholder="🔸">
+          <input type="text" id="sym-emoji" placeholder="🔹">
         </div>
       </div>
 
-      <div class="section-divider">🌐 ۲. منبع اصلی قیمت (Primary Source)</div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>نوع منبع:</label>
-          <select id="sym-source-type">
-            <option value="tgju">TGJU (شبکه طلا و ارز)</option>
-            <option value="nobitex">نوبیتکس (Nobitex API)</option>
-            <option value="emofid">ایموفید (صندوق‌ها)</option>
-            <option value="custom">صفحه وب سفارشی</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>واحد منبع اصلی:</label>
-          <select id="sym-is-rial">
-            <option value="true">ریال (تبدیل به تومان)</option>
-            <option value="false">تومان (بدون تغییر)</option>
-          </select>
-        </div>
-      </div>
-      <div class="form-group">
-        <label>اسلاگ TGJU یا آدرس URL کامل:</label>
-        <input type="text" id="sym-source-slug" required placeholder="مثلاً geram18 یا USDTIRT یا URL">
-      </div>
-      <div class="form-group">
-        <label>لیبل جستجو در صفحه:</label>
-        <input type="text" id="sym-label" placeholder="مثلاً: نرخ فعلی / آخرین قیمت">
-      </div>
-
-      <div class="section-divider">🔄 ۳. منبع پشتیبان در صورت خطا (Fallback Source)</div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>نوع منبع پشتیبان:</label>
-          <select id="sym-fallback-type">
-            <option value="none">بدون منبع پشتیبان</option>
-            <option value="tgju">TGJU</option>
-            <option value="nobitex">نوبیتکس</option>
-            <option value="emofid">ایموفید</option>
-            <option value="custom">صفحه سفارشی</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>واحد منبع پشتیبان:</label>
-          <select id="sym-fallback-is-rial">
-            <option value="true">ریال (تبدیل به تومان)</option>
-            <option value="false">تومان (بدون تغییر)</option>
-          </select>
-        </div>
-      </div>
-      <div class="form-group">
-        <label>اسلاگ پشتیبان یا URL:</label>
-        <input type="text" id="sym-fallback-slug" placeholder="مثلاً gc3 برای عیار یا crypto-tether برای تتر">
-      </div>
-      <div class="form-group">
-        <label>لیبل جستجو در منبع پشتیبان:</label>
-        <input type="text" id="sym-fallback-label" placeholder="مثلاً: نرخ فعلی یا قیمت ریالی">
-      </div>
-
-      <div class="section-divider">🛡️ ۴. اعتبارسنجی بازه قیمت</div>
       <div class="form-row">
         <div class="form-group">
           <label>حداقل قیمت مجاز (تومان):</label>
@@ -337,11 +282,36 @@ export function renderDashboardSPA(settings) {
         </div>
       </div>
 
-      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:1.5rem;">
-        <button type="button" class="btn btn-secondary" onclick="closeSymbolModal()">انصراف</button>
-        <button type="submit" class="btn btn-primary">💾 ذخیره نماد</button>
+      <!-- منابع پویا (Dynamic Sources) -->
+      <div style="margin: 1.5rem 0 0.5rem; display:flex; justify-content:space-between; align-items:center;">
+        <h4 style="font-size:0.95rem; color:#93c5fd;">🔗 منابع دریافت قیمت (به ترتیب اولویت):</h4>
+        <button type="button" class="btn btn-info btn-sm" onclick="addSourceField()">➕ افزودن منبع</button>
+      </div>
+      <p style="font-size:0.75rem; color:var(--text-muted); margin-bottom:1rem;">
+        سیستم به ترتیب از منبع اول استخراج می‌کند؛ در صورت قطعی یا خطا، فوراً به سراغ منبع بعدی می‌رود.
+      </p>
+
+      <div id="sources-container"></div>
+
+      <div style="display:flex; justify-content:space-between; gap:8px; margin-top:1.5rem;">
+        <button type="button" class="btn btn-warning" onclick="testCurrentModalSymbol()">🧪 تست زنده این نماد</button>
+        <div style="display:flex; gap:8px;">
+          <button type="button" class="btn btn-secondary" onclick="closeSymbolModal()">انصراف</button>
+          <button type="submit" class="btn btn-primary">💾 ذخیره نماد</button>
+        </div>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- Modal: Test Diagnostics Viewer -->
+<div class="modal-overlay" id="diag-modal">
+  <div class="modal-box">
+    <h3 id="diag-title" style="margin-bottom:1rem;">نتیجه تست تشخیصی نماد</h3>
+    <div id="diag-body" style="font-size:0.85rem; line-height:1.6;"></div>
+    <div style="text-align:left; margin-top:1.5rem;">
+      <button class="btn btn-secondary" onclick="document.getElementById('diag-modal').classList.remove('show')">بستن</button>
+    </div>
   </div>
 </div>
 
@@ -365,24 +335,41 @@ export function renderDashboardSPA(settings) {
     event.target.classList.add("active");
   }
 
+  function normalizeSym(s) {
+    if (!s.sources || !Array.isArray(s.sources) || s.sources.length === 0) {
+      s.sources = [];
+      if (s.source_type) {
+        s.sources.push({ type: s.source_type, target: s.source_slug || "", label: s.label || "", is_rial: s.is_rial !== false });
+      }
+      if (s.fallback_type && s.fallback_type !== "none") {
+        s.sources.push({ type: s.fallback_type, target: s.fallback_slug || "", label: s.fallback_label || "", is_rial: s.fallback_is_rial !== false });
+      }
+    }
+    return s;
+  }
+
   function renderSymbols() {
     const tbody = document.getElementById("symbols-table-body");
-    tbody.innerHTML = state.symbols.map((s, i) => \`
-      <tr>
-        <td><strong>\${s.emoji || "📌"} \${s.name}</strong> <span style="font-size:0.75rem; color:var(--text-muted);">(\${s.id})</span></td>
-        <td><span class="badge" style="background:rgba(255,255,255,0.08);">\${s.source_type} / \${s.source_slug}</span></td>
-        <td><span class="badge" style="background:rgba(255,255,255,0.05); color:#94a3b8;">\${s.fallback_type && s.fallback_type !== 'none' ? s.fallback_type + ' (' + s.fallback_slug + ')' : 'ندارد'}</span></td>
-        <td>
-          <span class="badge \${s.enabled ? 'badge-success switch-btn' : 'badge-danger switch-btn'}" onclick="toggleSymbol(\${i})">
-            \${s.enabled ? "فعال ✅" : "غیرفعال ❌"}
-          </span>
-        </td>
-        <td>
-          <button class="btn btn-warning btn-sm" onclick="openSymbolModal(\${i})">✏️</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteSymbol(\${i})">🗑</button>
-        </td>
-      </tr>
-    \`).join("");
+    tbody.innerHTML = state.symbols.map((rawS, i) => {
+      const s = normalizeSym(rawS);
+      const srcCount = s.sources.length;
+      return \`
+        <tr>
+          <td><strong>\${s.emoji || "📌"} \${s.name}</strong> <span style="font-size:0.75rem; color:var(--text-muted);">(\${s.id})</span></td>
+          <td><span class="badge" style="background:rgba(255,255,255,0.08);">\${srcCount} منبع تعریف‌شده</span></td>
+          <td>
+            <span class="badge \${s.enabled ? 'badge-success switch-btn' : 'badge-danger switch-btn'}" onclick="toggleSymbol(\${i})">
+              \${s.enabled ? "فعال ✅" : "غیرفعال ❌"}
+            </span>
+          </td>
+          <td>
+            <button class="btn btn-info btn-sm" onclick="testSymbolRow(\${i})">🧪 تست نماد</button>
+            <button class="btn btn-warning btn-sm" onclick="openSymbolModal(\${i})">✏️ ویرایش</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteSymbol(\${i})">🗑 حذف</button>
+          </td>
+        </tr>
+      \`;
+    }).join("");
   }
 
   function renderSchedules() {
@@ -424,7 +411,7 @@ export function renderDashboardSPA(settings) {
         showToast(successMsg, true);
         initFormValues();
       } else {
-        showToast("خطا در ذخیره‌سازی: " + data.error, false);
+        showToast("خطا: " + data.error, false);
       }
     } catch (e) {
       showToast("خطا در ارتباط با سرور", false);
@@ -460,42 +447,79 @@ export function renderDashboardSPA(settings) {
     syncSettings(updated, "نماد حذف شد");
   }
 
+  // اضافه کردن یک فیلد منبع به فرم مدال
+  function addSourceField(src = null) {
+    const s = src || { type: "tgju", target: "", label: "", is_rial: true };
+    const container = document.getElementById("sources-container");
+    const div = document.createElement("div");
+    div.className = "source-item";
+    const idx = container.children.length + 1;
+    div.innerHTML = \`
+      <div class="source-item-header">
+        <span>منبع شماره \${idx}</span>
+        <button type="button" class="btn btn-danger btn-sm" onclick="this.closest('.source-item').remove()">🗑 حذف این منبع</button>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>نوع سرویس / سایت:</label>
+          <select class="src-type">
+            <option value="emofid" \${s.type === "emofid" ? "selected" : ""}>ایموفید (Emofid)</option>
+            <option value="tgju" \${s.type === "tgju" ? "selected" : ""}>شبکه طلا و ارز (TGJU)</option>
+            <option value="nobitex" \${s.type === "nobitex" ? "selected" : ""}>صرافی نوبیتکس (Nobitex)</option>
+            <option value="tsetmc" \${s.type === "tsetmc" ? "selected" : ""}>سازمان بورس (TSETMC)</option>
+            <option value="custom" \${s.type === "custom" ? "selected" : ""}>صفحه وب سفارشی</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>واحد منبع:</label>
+          <select class="src-is-rial">
+            <option value="true" \${s.is_rial !== false ? "selected" : ""}>ریال (تقسیم بر ۱۰)</option>
+            <option value="false" \${s.is_rial === false ? "selected" : ""}>تومان (بدون تغییر)</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>اسلاگ، نماد یا URL کامل:</label>
+        <input type="text" class="src-target" value="\${s.target || ""}" required placeholder="مثلاً: gc3 یا USDTIRT یا IRO9AYAR0001 یا URL">
+      </div>
+      <div class="form-group" style="margin-bottom:0;">
+        <label>لیبل جستجو (اختیاری - خودکار شناسایی می‌شود):</label>
+        <input type="text" class="src-label" value="\${s.label || ""}" placeholder="خالی بگذارید تا خودکار پیدا کند یا مثلاً: قیمت صدور / نرخ فعلی">
+      </div>
+    \`;
+    container.appendChild(div);
+  }
+
   function openSymbolModal(idx) {
     const modal = document.getElementById("symbol-modal");
     document.getElementById("sym-index").value = idx;
+    const container = document.getElementById("sources-container");
+    container.innerHTML = "";
+
     if (idx === "new") {
       document.getElementById("modal-title").innerText = "➕ افزودن نماد جدید";
       document.getElementById("sym-id").value = "";
       document.getElementById("sym-id").readOnly = false;
       document.getElementById("sym-name").value = "";
       document.getElementById("sym-emoji").value = "📌";
-      document.getElementById("sym-source-type").value = "tgju";
-      document.getElementById("sym-source-slug").value = "";
-      document.getElementById("sym-label").value = "نرخ فعلی";
-      document.getElementById("sym-is-rial").value = "true";
-      document.getElementById("sym-fallback-type").value = "none";
-      document.getElementById("sym-fallback-slug").value = "";
-      document.getElementById("sym-fallback-label").value = "";
-      document.getElementById("sym-fallback-is-rial").value = "true";
-      document.getElementById("sym-min").value = 0;
+      document.getElementById("sym-min").value = 1000;
       document.getElementById("sym-max").value = 999999999;
+      addSourceField({ type: "tgju", target: "", label: "", is_rial: true });
     } else {
-      const s = state.symbols[idx];
+      const s = normalizeSym(state.symbols[idx]);
       document.getElementById("modal-title").innerText = "✏️ ویرایش نماد: " + s.name;
       document.getElementById("sym-id").value = s.id;
       document.getElementById("sym-id").readOnly = true;
       document.getElementById("sym-name").value = s.name;
       document.getElementById("sym-emoji").value = s.emoji || "";
-      document.getElementById("sym-source-type").value = s.source_type;
-      document.getElementById("sym-source-slug").value = s.source_slug;
-      document.getElementById("sym-label").value = s.label || "";
-      document.getElementById("sym-is-rial").value = String(s.is_rial);
-      document.getElementById("sym-fallback-type").value = s.fallback_type || "none";
-      document.getElementById("sym-fallback-slug").value = s.fallback_slug || "";
-      document.getElementById("sym-fallback-label").value = s.fallback_label || "";
-      document.getElementById("sym-fallback-is-rial").value = String(s.fallback_is_rial !== false);
       document.getElementById("sym-min").value = s.min;
       document.getElementById("sym-max").value = s.max;
+
+      if (s.sources.length === 0) {
+        addSourceField();
+      } else {
+        s.sources.forEach(src => addSourceField(src));
+      }
     }
     modal.classList.add("show");
   }
@@ -504,25 +528,41 @@ export function renderDashboardSPA(settings) {
     document.getElementById("symbol-modal").classList.remove("show");
   }
 
-  function saveSymbolForm(e) {
-    e.preventDefault();
+  function collectModalSymbol() {
     const idx = document.getElementById("sym-index").value;
-    const symObj = {
+    const container = document.getElementById("sources-container");
+    const sourceItems = container.querySelectorAll(".source-item");
+    const sources = [];
+
+    sourceItems.forEach(item => {
+      sources.push({
+        type: item.querySelector(".src-type").value,
+        target: item.querySelector(".src-target").value.trim(),
+        label: item.querySelector(".src-label").value.trim(),
+        is_rial: item.querySelector(".src-is-rial").value === "true"
+      });
+    });
+
+    return {
       id: document.getElementById("sym-id").value.trim(),
       name: document.getElementById("sym-name").value.trim(),
       emoji: document.getElementById("sym-emoji").value.trim() || "📌",
-      source_type: document.getElementById("sym-source-type").value,
-      source_slug: document.getElementById("sym-source-slug").value.trim(),
-      label: document.getElementById("sym-label").value.trim(),
-      is_rial: document.getElementById("sym-is-rial").value === "true",
-      fallback_type: document.getElementById("sym-fallback-type").value,
-      fallback_slug: document.getElementById("sym-fallback-slug").value.trim(),
-      fallback_label: document.getElementById("sym-fallback-label").value.trim(),
-      fallback_is_rial: document.getElementById("sym-fallback-is-rial").value === "true",
       min: Number(document.getElementById("sym-min").value) || 0,
       max: Number(document.getElementById("sym-max").value) || 999999999,
-      enabled: idx === "new" ? true : state.symbols[idx].enabled
+      enabled: idx === "new" ? true : state.symbols[idx].enabled,
+      sources
     };
+  }
+
+  function saveSymbolForm(e) {
+    e.preventDefault();
+    const idx = document.getElementById("sym-index").value;
+    const symObj = collectModalSymbol();
+
+    if (symObj.sources.length === 0) {
+      alert("حداقل یک منبع برای این نماد باید اضافه کنید!");
+      return;
+    }
 
     const updated = { ...state };
     if (idx === "new") {
@@ -531,7 +571,66 @@ export function renderDashboardSPA(settings) {
       updated.symbols[Number(idx)] = symObj;
     }
     closeSymbolModal();
-    syncSettings(updated, "نماد ذخیره شد");
+    syncSettings(updated, "نماد و منابع ذخیره شدند");
+  }
+
+  // تست اختصاصی تمام منابع یک نماد
+  async function runSymbolTest(symbol) {
+    showToast("در حال تست تک‌تک منابع نماد...", true);
+    try {
+      const res = await fetch("/api/test-symbol", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ symbol })
+      });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error);
+
+      const d = data.diagnostics;
+      let html = \`<div style="margin-bottom:12px;"><strong>نماد:</strong> \${d.symbolName} (\${d.symbolId})</div>\`;
+      html += \`<div style="margin-bottom:12px;"><strong>قیمت نهایی انتخابی:</strong> <span style="color:#10b981; font-weight:bold;">\${d.finalPrice ? d.finalPrice.toLocaleString('fa-IR') + ' تومان' : 'ناموفق'}</span></div>\`;
+      html += \`<table style="width:100%; border-collapse:collapse; margin-top:10px;">
+        <thead>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.1);">
+            <th style="padding:6px;">اولویت</th>
+            <th style="padding:6px;">سرویس</th>
+            <th style="padding:6px;">آدرس/اسلاگ</th>
+            <th style="padding:6px;">وضعیت</th>
+            <th style="padding:6px;">قیمت (تومان)</th>
+          </tr>
+        </thead>
+        <tbody>\`;
+
+      d.results.forEach(r => {
+        const isOk = r.status === "success";
+        html += \`
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+            <td style="padding:8px;">\${r.index}</td>
+            <td style="padding:8px;"><span class="badge" style="background:rgba(255,255,255,0.1);">\${r.type}</span></td>
+            <td style="padding:8px; font-size:0.75rem; color:#94a3b8;">\${r.target}</td>
+            <td style="padding:8px;">\${isOk ? '<span class="badge badge-success">موفق ✅</span>' : '<span class="badge badge-danger">خطا ❌</span>'}</td>
+            <td style="padding:8px;">\${isOk ? r.toman.toLocaleString('fa-IR') : '<span style="font-size:0.75rem; color:#f87171;">' + (r.error || 'خطا') + '</span>'}</td>
+          </tr>
+        \`;
+      });
+
+      html += \`</tbody></table>\`;
+
+      document.getElementById("diag-body").innerHTML = html;
+      document.getElementById("diag-modal").classList.add("show");
+    } catch (e) {
+      showToast("خطا در اجرای تست: " + e.message, false);
+    }
+  }
+
+  function testSymbolRow(idx) {
+    const s = normalizeSym(state.symbols[idx]);
+    runSymbolTest(s);
+  }
+
+  function testCurrentModalSymbol() {
+    const s = collectModalSymbol();
+    runSymbolTest(s);
   }
 
   function addSchedule() {
