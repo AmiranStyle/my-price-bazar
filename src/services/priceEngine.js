@@ -1,12 +1,15 @@
 // ==========================================
-// 📈 موتور قیمت‌گیری داینامیک چندمنبعی (Multi-Source Engine)
+// 📈 موتور قیمت‌گیری داینامیک، چندمنبعی و خودترمیم
+// پشتیبانی کامل از: Emofid, TGJU, Nobitex, TSETMC, Rahavard365, Custom
 // ==========================================
 
 import { BROWSER_HEADERS, htmlToText, extractNumberAfterLabel } from '../utils/html.js';
 import { parseNumber, rialToToman } from '../utils/helpers.js';
 import { sendErrorToAdmin } from './telegram.js';
 
-// استخراج از TGJU با تشخیص هوشمند
+// ------------------------------------------
+// ۱. استخراج از TGJU
+// ------------------------------------------
 async function fetchFromTGJU(slug, label) {
   const cleanSlug = slug.split("?")[0].replace(/^\/|\/$/g, "");
   const response = await fetch(`https://www.tgju.org/profile/${cleanSlug}?_t=${Date.now()}`, {
@@ -14,23 +17,23 @@ async function fetchFromTGJU(slug, label) {
     headers: BROWSER_HEADERS,
     cf: { cacheTtl: 0, cacheEverything: false }
   });
-  if (!response.ok) throw new Error(`TGJU HTTP ${response.status}`);
+  if (!response.ok) throw new Error(`TGJU HTTP ${response.status} برای ${cleanSlug}`);
   const html = await response.text();
   const text = htmlToText(html);
 
-  // اگر لیبل دستی داده شده بود
+  // بررسی لیبل دستی در صورت وجود
   if (label && label.trim() !== "") {
     const p = extractNumberAfterLabel(text, label, 100);
     if (p) return p;
   }
 
-  // تلاش هوشمند برای تتر
+  // بررسی اختصاصی تتر
   if (cleanSlug.includes("tether")) {
     const pTether = extractNumberAfterLabel(text, "قیمت ریالی", 80);
     if (pTether) return pTether;
   }
 
-  // تلاش هوشمند عمومی (نرخ فعلی / قیمت پایانی / تگ info-price)
+  // بررسی برچسب‌های عمومی و متادیتای اختصاصی
   const regexMatch = html.match(/class="info-price"[^>]*>([0-9۰-۹٠-٩,٬]+)/i) ||
                      html.match(/data-col="info\.last_trade\.PDrCotVal"[^>]*>([0-9۰-۹٠-٩,٬]+)/i);
   if (regexMatch && regexMatch[1]) {
@@ -46,7 +49,9 @@ async function fetchFromTGJU(slug, label) {
   throw new Error(`نرخ در TGJU/${cleanSlug} شناسایی نشد.`);
 }
 
-// استخراج از ایموفید با تشخیص هوشمند
+// ------------------------------------------
+// ۲. استخراج از ایموفید (Emofid)
+// ------------------------------------------
 async function fetchFromEmofid(url, label) {
   const targetUrl = (url && url.startsWith("http")) ? url.split("?")[0] : "https://www.emofid.com/funds/ayar/";
   const response = await fetch(`${targetUrl}?_t=${Date.now()}`, {
@@ -67,7 +72,77 @@ async function fetchFromEmofid(url, label) {
   throw new Error("قیمت در صفحه ایموفید پیدا نشد.");
 }
 
-// استخراج از نوبیتکس
+// ------------------------------------------
+// ۳. استخراج اختصاصی از ره‌آورد ۳۶۵ (Rahavard365)
+// ------------------------------------------
+async function fetchFromRahavard(targetUrl, label) {
+  // استخراج کد عددی نماد از لینک (مثلاً 4475 از asset/4475/عیار)
+  const matchId = targetUrl.match(/asset\/(\d+)/i) || targetUrl.match(/(\d+)/);
+  const assetId = matchId ? matchId[1] : "4475";
+
+  // تلاش ۱: درخواست به API رسمی ره‌آورد ۳۶۵
+  try {
+    const apiUrl = `https://rahavard365.com/api/v2/assets/${assetId}?_t=${Date.now()}`;
+    const apiRes = await fetch(apiUrl, {
+      method: "GET",
+      headers: {
+        ...BROWSER_HEADERS,
+        "Accept": "application/json, text/plain, */*",
+        "Referer": "https://rahavard365.com/"
+      },
+      cf: { cacheTtl: 0, cacheEverything: false }
+    });
+
+    if (apiRes.ok) {
+      const json = await apiRes.json();
+      const data = json?.data || json;
+      const apiPrice = data?.last_price || data?.close_price || data?.real_close_price;
+      if (apiPrice && Number(apiPrice) > 1000) {
+        return Number(apiPrice);
+      }
+    }
+  } catch (apiErr) {
+    console.warn("API ره‌آورد ناموفق بود، تلاش برای خواندن صفحه وب:", apiErr.message);
+  }
+
+  // تلاش ۲: خواندن مستقیم صفحه وب ره‌آورد و استخراج داده‌های تعبیه‌شده
+  const cleanWebUrl = targetUrl.startsWith("http") ? targetUrl : `https://rahavard365.com/asset/${assetId}`;
+  const webRes = await fetch(`${cleanWebUrl}?_t=${Date.now()}`, {
+    method: "GET",
+    headers: {
+      ...BROWSER_HEADERS,
+      "Referer": "https://rahavard365.com/"
+    },
+    cf: { cacheTtl: 0, cacheEverything: false }
+  });
+
+  if (!webRes.ok) throw new Error(`Rahavard Web HTTP ${webRes.status}`);
+  const html = await webRes.text();
+
+  // الف) جستجو در متغیرهای JSON درون کدهای صفحه (Nuxt state)
+  const jsonMatch = html.match(/"last_price":\s*([0-9]+)/i) ||
+                    html.match(/"close_price":\s*([0-9]+)/i) ||
+                    html.match(/"real_close_price":\s*([0-9]+)/i);
+  if (jsonMatch && jsonMatch[1]) {
+    const price = Number(jsonMatch[1]);
+    if (price > 1000) return price;
+  }
+
+  // ب) جستجوی متنی بر اساس ساختار تابلوی معاملات
+  const text = htmlToText(html);
+  const targetLabel = label && label.trim() !== "" ? label : "آخرین معامله";
+  const webPrice = extractNumberAfterLabel(text, targetLabel, 80) ||
+                   extractNumberAfterLabel(text, "پایانی", 80) ||
+                   extractNumberAfterLabel(text, "قیمت", 80);
+
+  if (webPrice && webPrice > 1000) return webPrice;
+
+  throw new Error("قیمت زنده در صفحه ره‌آورد ۳۶۵ پیدا نشد.");
+}
+
+// ------------------------------------------
+// ۴. استخراج از نوبیتکس (Nobitex)
+// ------------------------------------------
 async function fetchFromNobitex(symbol) {
   const cleanSymbol = (symbol || "USDTIRT").trim().toUpperCase();
   const response = await fetch(`https://api.nobitex.ir/v2/orderbook/${cleanSymbol}`, {
@@ -82,7 +157,9 @@ async function fetchFromNobitex(symbol) {
   return price;
 }
 
-// استخراج از TSETMC رسمی بورس
+// ------------------------------------------
+// ۵. استخراج از TSETMC رسمی بورس
+// ------------------------------------------
 async function fetchFromTSETMC(inscode) {
   const cleanCode = inscode ? inscode.trim() : "IRO9AYAR0001";
   const response = await fetch(`https://cdn.tsetmc.com/api/ClosingPrice/GetClosingPriceDailyList/${cleanCode}/1?_t=${Date.now()}`, {
@@ -101,7 +178,9 @@ async function fetchFromTSETMC(inscode) {
   return Number(price);
 }
 
-// استخراج از آدرس سفارشی
+// ------------------------------------------
+// ۶. استخراج از آدرس سفارشی عمومی
+// ------------------------------------------
 async function fetchFromCustom(url, label) {
   const response = await fetch(url, {
     method: "GET",
@@ -117,11 +196,18 @@ async function fetchFromCustom(url, label) {
   return price;
 }
 
-// اجرای یک منبع منفرد
+// ------------------------------------------
+// ۷. هدایت‌کننده هوشمند منبع (Smart Router)
+// ------------------------------------------
 export async function executeSingleSource(source) {
   const type = source.type;
   const target = source.target || "";
   const label = source.label || "";
+
+  // تشخیص خودکار ره‌آورد ۳۶۵ (چه کاربر نوع را rahavard بگذارد و چه لینک ره‌آورد را در custom بگذارد)
+  if (type === "rahavard" || (target && target.includes("rahavard365.com"))) {
+    return await fetchFromRahavard(target, label);
+  }
 
   switch (type) {
     case "emofid":
@@ -139,7 +225,9 @@ export async function executeSingleSource(source) {
   }
 }
 
-// نرمال‌سازی نماد (تطبیق با نسخه‌های قدیمی)
+// ------------------------------------------
+// ۸. نرمال‌سازی نماد (پشتیبانی از ساختارهای قبلی و جدید)
+// ------------------------------------------
 export function normalizeSymbol(sym) {
   if (!sym.sources || !Array.isArray(sym.sources) || sym.sources.length === 0) {
     sym.sources = [];
@@ -163,9 +251,13 @@ export function normalizeSymbol(sym) {
   return sym;
 }
 
-// محاسبه قیمت نهایی تومان بر اساس واحد و اعتبارسنجی
+// ------------------------------------------
+// ۹. محاسبه دقیق قیمت نهایی تومان
+// ------------------------------------------
 function computeFinalPrice(rawPrice, isRial, symbol) {
   let needRialConvert = isRial === true || isRial === "true";
+  
+  // برای دارایی‌های بورس، عیار و تتر، ارقام بالای ۱۰۰ هزار تومان قطعاً ریال هستند
   if (symbol.id !== "gold18" && rawPrice > 100000) {
     needRialConvert = true;
   }
@@ -176,7 +268,9 @@ function computeFinalPrice(rawPrice, isRial, symbol) {
   return needRialConvert ? rialToToman(rawPrice) : parseNumber(rawPrice);
 }
 
-// دریافت قیمت نهایی یک نماد با پیمایش آبشاری منابع
+// ------------------------------------------
+// ۱۰. استخراج آبشاری قیمت یک نماد
+// ------------------------------------------
 export async function fetchSymbolPrice(symbol, env = null) {
   if (!symbol.enabled) return null;
   const sym = normalizeSymbol(symbol);
@@ -190,11 +284,11 @@ export async function fetchSymbolPrice(symbol, env = null) {
       const rawPrice = await executeSingleSource(src);
       if (rawPrice && rawPrice > 0) {
         finalPrice = computeFinalPrice(rawPrice, src.is_rial, sym);
-        // بررسی بازه مجاز
+        // بررسی محدوده مجاز
         if (finalPrice >= sym.min && finalPrice <= sym.max) {
           return finalPrice;
         } else {
-          errors.push(`منبع ${i + 1} (${src.type}): قیمت ${finalPrice} خارج از بازه (${sym.min}-${sym.max})`);
+          errors.push(`منبع ${i + 1} (${src.type}): قیمت ${finalPrice} خارج از محدوده (${sym.min}-${sym.max})`);
         }
       }
     } catch (e) {
@@ -202,7 +296,7 @@ export async function fetchSymbolPrice(symbol, env = null) {
     }
   }
 
-  // اگر تمام منابع با شکست مواجه شدند، به ادمین هشدار بده
+  // اگر تمام منابع با خطا مواجه شدند
   if (env?.BOT_TOKEN && env?.ADMIN_USER_ID) {
     await sendErrorToAdmin(
       env.BOT_TOKEN,
@@ -215,7 +309,9 @@ export async function fetchSymbolPrice(symbol, env = null) {
   return null;
 }
 
-// تست تشخیصی کلیه منابع یک نماد (مخصوص دکمه تست در داشبورد)
+// ------------------------------------------
+// ۱۱. تست تشخیصی منابع یک نماد (مخصوص دکمه تست در داشبورد)
+// ------------------------------------------
 export async function testSymbolDiagnostics(symbol) {
   const sym = normalizeSymbol(symbol);
   const results = [];
@@ -258,7 +354,9 @@ export async function testSymbolDiagnostics(symbol) {
   };
 }
 
-// استخراج کلیه نمادها
+// ------------------------------------------
+// ۱۲. استخراج قیمت کلیه نمادها
+// ------------------------------------------
 export async function fetchAllPrices(settings, env = null) {
   const activeSymbols = settings.symbols.filter(s => s.enabled);
   return await Promise.all(
