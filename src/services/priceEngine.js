@@ -21,19 +21,16 @@ async function fetchFromTGJU(slug, label) {
   const html = await response.text();
   const text = htmlToText(html);
 
-  // بررسی لیبل دستی در صورت وجود
   if (label && label.trim() !== "") {
     const p = extractNumberAfterLabel(text, label, 100);
     if (p) return p;
   }
 
-  // بررسی اختصاصی تتر
   if (cleanSlug.includes("tether")) {
     const pTether = extractNumberAfterLabel(text, "قیمت ریالی", 80);
     if (pTether) return pTether;
   }
 
-  // بررسی برچسب‌های عمومی و متادیتای اختصاصی
   const regexMatch = html.match(/class="info-price"[^>]*>([0-9۰-۹٠-٩,٬]+)/i) ||
                      html.match(/data-col="info\.last_trade\.PDrCotVal"[^>]*>([0-9۰-۹٠-٩,٬]+)/i);
   if (regexMatch && regexMatch[1]) {
@@ -73,40 +70,45 @@ async function fetchFromEmofid(url, label) {
 }
 
 // ------------------------------------------
-// ۳. استخراج اختصاصی از ره‌آورد ۳۶۵ (Rahavard365)
+// ۳. استخراج چندلایه و تضمینی از ره‌آورد ۳۶۵ (Rahavard365)
 // ------------------------------------------
 async function fetchFromRahavard(targetUrl, label) {
-  // استخراج کد عددی نماد از لینک (مثلاً 4475 از asset/4475/عیار)
-  const matchId = targetUrl.match(/asset\/(\d+)/i) || targetUrl.match(/(\d+)/);
+  // ۱. رمزگشایی URL و استخراج شناسه عددی نماد (مثلاً 4475)
+  const decodedUrl = decodeURIComponent(targetUrl);
+  const matchId = decodedUrl.match(/asset\/(\d+)/i) || decodedUrl.match(/(\d+)/);
   const assetId = matchId ? matchId[1] : "4475";
 
-  // تلاش ۱: درخواست به API رسمی ره‌آورد ۳۶۵
-  try {
-    const apiUrl = `https://rahavard365.com/api/v2/assets/${assetId}?_t=${Date.now()}`;
-    const apiRes = await fetch(apiUrl, {
-      method: "GET",
-      headers: {
-        ...BROWSER_HEADERS,
-        "Accept": "application/json, text/plain, */*",
-        "Referer": "https://rahavard365.com/"
-      },
-      cf: { cacheTtl: 0, cacheEverything: false }
-    });
+  // لایه ۱: تلاش از طریق اندپوینت‌های API وب ره‌آورد
+  const apiCandidates = [
+    `https://rahavard365.com/api/web/assets/${assetId}`,
+    `https://rahavard365.com/api/v2/assets/${assetId}`
+  ];
 
-    if (apiRes.ok) {
-      const json = await apiRes.json();
-      const data = json?.data || json;
-      const apiPrice = data?.last_price || data?.close_price || data?.real_close_price;
-      if (apiPrice && Number(apiPrice) > 1000) {
-        return Number(apiPrice);
+  for (const apiUrl of apiCandidates) {
+    try {
+      const apiRes = await fetch(`${apiUrl}?_t=${Date.now()}`, {
+        method: "GET",
+        headers: {
+          ...BROWSER_HEADERS,
+          "Accept": "application/json, text/plain, */*",
+          "Referer": `https://rahavard365.com/asset/${assetId}`
+        },
+        cf: { cacheTtl: 0, cacheEverything: false }
+      });
+
+      if (apiRes.ok) {
+        const json = await apiRes.json();
+        const d = json?.data || json;
+        const candidatePrice = d?.close_price || d?.last_price || d?.real_close_price || d?.trade_price;
+        if (candidatePrice && Number(candidatePrice) > 1000) {
+          return Number(candidatePrice);
+        }
       }
-    }
-  } catch (apiErr) {
-    console.warn("API ره‌آورد ناموفق بود، تلاش برای خواندن صفحه وب:", apiErr.message);
+    } catch (_) {}
   }
 
-  // تلاش ۲: خواندن مستقیم صفحه وب ره‌آورد و استخراج داده‌های تعبیه‌شده
-  const cleanWebUrl = targetUrl.startsWith("http") ? targetUrl : `https://rahavard365.com/asset/${assetId}`;
+  // لایه ۲: دریافت مستقیم صفحه وب ره‌آورد
+  const cleanWebUrl = decodedUrl.startsWith("http") ? decodedUrl : `https://rahavard365.com/asset/${assetId}`;
   const webRes = await fetch(`${cleanWebUrl}?_t=${Date.now()}`, {
     method: "GET",
     headers: {
@@ -119,23 +121,52 @@ async function fetchFromRahavard(targetUrl, label) {
   if (!webRes.ok) throw new Error(`Rahavard Web HTTP ${webRes.status}`);
   const html = await webRes.text();
 
-  // الف) جستجو در متغیرهای JSON درون کدهای صفحه (Nuxt state)
-  const jsonMatch = html.match(/"last_price":\s*([0-9]+)/i) ||
-                    html.match(/"close_price":\s*([0-9]+)/i) ||
-                    html.match(/"real_close_price":\s*([0-9]+)/i);
-  if (jsonMatch && jsonMatch[1]) {
-    const price = Number(jsonMatch[1]);
-    if (price > 1000) return price;
+  // الف) جستجو در متغیرهای جیسون تعبیه شده در سورس HTML (کدهای فریم‌ورک)
+  const jsonRegexList = [
+    /"close_price":\s*([0-9]+)/i,
+    /"last_price":\s*([0-9]+)/i,
+    /"real_close_price":\s*([0-9]+)/i,
+    /"trade_price":\s*([0-9]+)/i,
+    /close_price\s*:\s*([0-9]+)/i,
+    /last_price\s*:\s*([0-9]+)/i
+  ];
+
+  for (const reg of jsonRegexList) {
+    const m = html.match(reg);
+    if (m && m[1] && Number(m[1]) > 1000) {
+      return Number(m[1]);
+    }
   }
 
-  // ب) جستجوی متنی بر اساس ساختار تابلوی معاملات
+  // ب) جستجوی ساختاریافته در متن HTML ره‌آورد (بر اساس تابلو: آخرین معامله و پایانی)
   const text = htmlToText(html);
-  const targetLabel = label && label.trim() !== "" ? label : "آخرین معامله";
-  const webPrice = extractNumberAfterLabel(text, targetLabel, 80) ||
-                   extractNumberAfterLabel(text, "پایانی", 80) ||
-                   extractNumberAfterLabel(text, "قیمت", 80);
+  const searchLabels = [
+    label,
+    "آخرین معامله",
+    "پایانی",
+    "آخرین قیمت",
+    "قیمت پایانی",
+    "کمترین",
+    "بیشترین"
+  ].filter(Boolean);
 
-  if (webPrice && webPrice > 1000) return webPrice;
+  for (const lbl of searchLabels) {
+    const extracted = extractNumberAfterLabel(text, lbl, 60);
+    if (extracted && extracted > 1000) {
+      return extracted;
+    }
+  }
+
+  // ج) شکار الگوی قیمت‌های ۶ رقمی (بین ۱۰۰,۰۰۰ تا ۹,۰۰۰,۰۰۰ ریال) در تابلوی ره‌آورد
+  const numbersInTable = text.match(/[0-9۰-۹]{3}[,،٬][0-9۰-۹]{3}/g);
+  if (numbersInTable && numbersInTable.length > 0) {
+    for (const numStr of numbersInTable) {
+      const parsed = parseNumber(numStr);
+      if (parsed && parsed >= 100000 && parsed <= 5000000) {
+        return parsed;
+      }
+    }
+  }
 
   throw new Error("قیمت زنده در صفحه ره‌آورد ۳۶۵ پیدا نشد.");
 }
@@ -197,14 +228,14 @@ async function fetchFromCustom(url, label) {
 }
 
 // ------------------------------------------
-// ۷. هدایت‌کننده هوشمند منبع (Smart Router)
+// ۷. هدایت‌کننده هوشمند منبع
 // ------------------------------------------
 export async function executeSingleSource(source) {
   const type = source.type;
   const target = source.target || "";
   const label = source.label || "";
 
-  // تشخیص خودکار ره‌آورد ۳۶۵ (چه کاربر نوع را rahavard بگذارد و چه لینک ره‌آورد را در custom بگذارد)
+  // تشخیص ره‌آورد ۳۶۵ به صورت خودکار از روی نوع منبع یا دامنه
   if (type === "rahavard" || (target && target.includes("rahavard365.com"))) {
     return await fetchFromRahavard(target, label);
   }
@@ -226,7 +257,7 @@ export async function executeSingleSource(source) {
 }
 
 // ------------------------------------------
-// ۸. نرمال‌سازی نماد (پشتیبانی از ساختارهای قبلی و جدید)
+// ۸. نرمال‌سازی نماد
 // ------------------------------------------
 export function normalizeSymbol(sym) {
   if (!sym.sources || !Array.isArray(sym.sources) || sym.sources.length === 0) {
@@ -252,12 +283,11 @@ export function normalizeSymbol(sym) {
 }
 
 // ------------------------------------------
-// ۹. محاسبه دقیق قیمت نهایی تومان
+// ۹. محاسبه قیمت نهایی تومان
 // ------------------------------------------
 function computeFinalPrice(rawPrice, isRial, symbol) {
   let needRialConvert = isRial === true || isRial === "true";
   
-  // برای دارایی‌های بورس، عیار و تتر، ارقام بالای ۱۰۰ هزار تومان قطعاً ریال هستند
   if (symbol.id !== "gold18" && rawPrice > 100000) {
     needRialConvert = true;
   }
@@ -284,7 +314,6 @@ export async function fetchSymbolPrice(symbol, env = null) {
       const rawPrice = await executeSingleSource(src);
       if (rawPrice && rawPrice > 0) {
         finalPrice = computeFinalPrice(rawPrice, src.is_rial, sym);
-        // بررسی محدوده مجاز
         if (finalPrice >= sym.min && finalPrice <= sym.max) {
           return finalPrice;
         } else {
@@ -296,7 +325,6 @@ export async function fetchSymbolPrice(symbol, env = null) {
     }
   }
 
-  // اگر تمام منابع با خطا مواجه شدند
   if (env?.BOT_TOKEN && env?.ADMIN_USER_ID) {
     await sendErrorToAdmin(
       env.BOT_TOKEN,
@@ -310,7 +338,7 @@ export async function fetchSymbolPrice(symbol, env = null) {
 }
 
 // ------------------------------------------
-// ۱۱. تست تشخیصی منابع یک نماد (مخصوص دکمه تست در داشبورد)
+// ۱۱. تست تشخیصی منابع یک نماد
 // ------------------------------------------
 export async function testSymbolDiagnostics(symbol) {
   const sym = normalizeSymbol(symbol);
