@@ -72,40 +72,66 @@ async function fetchFromEmofid(url, label) {
 // ------------------------------------------
 // ۳. استخراج چندلایه از ره‌آورد ۳۶۵ (Rahavard365)
 // ------------------------------------------
+// استخراج دقیق و مستقیم از API اختصاصی تابلوی ره‌آورد ۳۶۵
 async function fetchFromRahavard(targetUrl, label) {
   const decoded = decodeURIComponent(targetUrl);
   const matchId = decoded.match(/asset\/(\d+)/i) || decoded.match(/(\d+)/);
   const assetId = matchId ? matchId[1] : "4475";
 
-  // لایه ۱: تلاش مستقیم از APIهای ره‌آورد
-  const apiUrls = [
+  // اندپوینت‌های اصلی دریافت تابلوی زنده نماد در ره‌آورد ۳۶۵
+  const endpoints = [
+    `https://rahavard365.com/api/v2/markets/${assetId}/summary`,
+    `https://rahavard365.com/api/v2/trade/asset/${assetId}`,
     `https://rahavard365.com/api/v2/assets/${assetId}`,
-    `https://rahavard365.com/api/web/assets/${assetId}`,
-    `https://rahavard365.com/api/v2/markets/assets/${assetId}`
+    `https://rahavard365.com/api/web/assets/${assetId}`
   ];
 
-  for (const api of apiUrls) {
+  let lastStatus = 0;
+  let lastError = "";
+
+  for (const ep of endpoints) {
     try {
-      const res = await fetch(`${api}?_t=${Date.now()}`, {
+      const res = await fetch(`${ep}?_t=${Date.now()}`, {
         method: "GET",
         headers: {
           "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
           "Accept": "application/json, text/plain, */*",
-          "Referer": "https://rahavard365.com/"
+          "Accept-Language": "fa-IR,fa;q=0.9,en;q=0.8",
+          "Referer": `https://rahavard365.com/asset/${assetId}`
         },
         cf: { cacheTtl: 0, cacheEverything: false }
       });
 
+      lastStatus = res.status;
+
       if (res.ok) {
         const json = await res.json();
-        const d = json?.data || json;
-        const p = d?.last_price || d?.close_price || d?.real_close_price || d?.price || d?.trade_price;
-        if (p && Number(p) > 1000) {
-          return Number(p);
+        const d = json?.data || json?.result || json;
+        
+        // استخراج فیلدهای محتمل قیمت در دیتای ره‌آورد (آخرین معامله، پایانی، قیمت بسته شدن)
+        const price = d?.last_price || 
+                      d?.close_price || 
+                      d?.real_close_price || 
+                      d?.last_trade_price || 
+                      d?.trade_price || 
+                      d?.price ||
+                      d?.summary?.last_price ||
+                      d?.summary?.close_price;
+
+        if (price && Number(price) > 1000) {
+          return Number(price);
         }
+      } else {
+        lastError = `HTTP ${res.status}`;
       }
-    } catch (_) {}
+    } catch (e) {
+      lastError = e.message;
+    }
   }
+
+  // اگر ره‌آورد درخواست‌های کلادفلر را فیلتر/بلاک کند
+  throw new Error(`ره‌آورد ۳۶۵ پاسخ معتبر نداد (${lastError || 'کد وضعیت ' + lastStatus})`);
+}
 
   // لایه ۲: دریافت مستقیم با آدرس عددی بدون حروف فارسی
   const cleanWebUrl = `https://rahavard365.com/asset/${assetId}?_t=${Date.now()}`;
