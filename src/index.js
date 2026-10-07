@@ -1,9 +1,9 @@
 // ==========================================
-// 🎯 نقطه ورود اصلی ورکر - نسخه بدون نقص
+// 🎯 نقطه ورود اصلی ورکر - نسخه کامل چندمنبعی
 // ==========================================
 
 import { getSettings, saveSettings, getSentLog, addSentLog } from './services/kv.js';
-import { fetchAllPrices } from './services/priceEngine.js';
+import { fetchAllPrices, testSymbolDiagnostics } from './services/priceEngine.js';
 import { sendTelegramMessage, sendErrorToAdmin } from './services/telegram.js';
 import { generateCaption, sendPostToChannel } from './core/post.js';
 import { renderLoginPage } from './ui/auth.js';
@@ -72,14 +72,14 @@ export default {
       }
     }
 
-    // داشبورد تک‌صفحه‌ای SPA
+    // داشبورد SPA
     if (url.pathname === "/admin" || url.pathname === "/") {
       return new Response(renderDashboardSPA(settings), {
         headers: { "Content-Type": "text/html; charset=utf-8" }
       });
     }
 
-    // ذخیره تنظیمات بدون رفرش
+    // ذخیره تنظیمات
     if (url.pathname === "/api/settings" && request.method === "POST") {
       try {
         const newSettings = await request.json();
@@ -94,7 +94,23 @@ export default {
       }
     }
 
-    // پیش‌نمایش
+    // تست اختصاصی تمام منابع یک نماد
+    if (url.pathname === "/api/test-symbol" && request.method === "POST") {
+      try {
+        const payload = await request.json();
+        const symbol = payload.symbol;
+        const diagnostics = await testSymbolDiagnostics(symbol);
+        return new Response(JSON.stringify({ ok: true, diagnostics }), {
+          headers: { "Content-Type": "application/json; charset=utf-8" }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ ok: false, error: err.message }), {
+          status: 500, headers: { "Content-Type": "application/json; charset=utf-8" }
+        });
+      }
+    }
+
+    // پیش‌نمایش کپشن
     if (url.pathname === "/api/preview") {
       try {
         const priceResults = await fetchAllPrices(settings, env);
@@ -126,7 +142,7 @@ export default {
       }
     }
 
-    // تست قیمت‌ها
+    // تست قیمت‌ها به صورت خلاصه
     if (url.pathname === "/test-api") {
       try {
         const priceResults = await fetchAllPrices(settings, env);
@@ -156,7 +172,7 @@ export default {
           await fetch(`https://api.telegram.org/bot${botToken}/answerCallbackQuery`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ callback_query_id: callbackId, text: "⏳ در حال ارسال..." })
+            body: JSON.stringify({ callback_query_id: callbackId, text: "⏳ در حال پردازش..." })
           });
         }
 
@@ -195,7 +211,7 @@ export default {
     });
   },
 
-  // کرون‌جاب ارسال خودکار
+  // کرون‌جاب
   async scheduled(event, env, ctx) {
     try {
       const botToken = env.BOT_TOKEN;
@@ -221,7 +237,7 @@ export default {
         const minuteDiff = (currentHour * 60 + currentMinute) - (schHour * 60 + schMinute);
 
         if (minuteDiff >= 0 && minuteDiff < 10 && !sentLog.includes(schedule.time)) {
-          console.log(`CRON: Sending for schedule ${schedule.time}`);
+          console.log(`CRON: زمان ارسال فرا رسید (${schedule.time})`);
           await sendPostToChannel(botToken, settings, env);
           await addSentLog(env, schedule.time);
         }
