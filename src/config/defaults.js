@@ -1,5 +1,5 @@
 // ==========================================
-// ⚙️ تنظیمات پیش‌فرض با معماری چندمنبعی (Fallbacks)
+// ⚙️ تنظیمات پیش‌فرض با منابع مطمئن
 // ==========================================
 
 export function getDefaultSettings(env = {}) {
@@ -22,7 +22,6 @@ export function getDefaultSettings(env = {}) {
         source_slug: "geram18",
         label: "نرخ فعلی",
         is_rial: true,
-        // منبع پشتیبان
         fallback_type: "none",
         fallback_slug: "",
         fallback_label: "",
@@ -39,7 +38,6 @@ export function getDefaultSettings(env = {}) {
         source_slug: "USDTIRT",
         label: "",
         is_rial: true,
-        // منبع پشتیبان: TGJU در صورت اختلال نوبیتکس
         fallback_type: "tgju",
         fallback_slug: "crypto-tether",
         fallback_label: "قیمت ریالی",
@@ -52,14 +50,13 @@ export function getDefaultSettings(env = {}) {
         id: "ayar",
         name: "صندوق عیار",
         emoji: "🔹",
-        source_type: "emofid",
-        source_slug: "https://www.emofid.com/funds/ayar/",
-        label: "آخرین قیمت",
+        source_type: "tgju",
+        source_slug: "gc3",
+        label: "نرخ فعلی",
         is_rial: true,
-        // منبع پشتیبان: TGJU اسلاگ زنده gc3
-        fallback_type: "tgju",
-        fallback_slug: "gc3",
-        fallback_label: "نرخ فعلی",
+        fallback_type: "emofid",
+        fallback_slug: "https://www.emofid.com/funds/ayar/",
+        fallback_label: "آخرین قیمت",
         fallback_is_rial: true,
         min: 10000,
         max: 500000,
