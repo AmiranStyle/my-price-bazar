@@ -70,81 +70,50 @@ async function fetchFromEmofid(url, label) {
 }
 
 // ------------------------------------------
-// ۳. استخراج تضمینی و بدون خطا از ره‌آورد ۳۶۵ (Rahavard365)
+// ۳. استخراج اختصاصی از ای‌پی‌آی ره‌آورد ۳۶۵ (Rahavard365 API)
 // ------------------------------------------
-async function fetchFromRahavard(targetUrl, label) {
-  let finalUrl = targetUrl.trim();
-  if (!finalUrl.startsWith("http")) {
-    finalUrl = `https://rahavard365.com/asset/${finalUrl}`;
-  }
+async function fetchFromRahavard(targetUrl) {
+  const decoded = decodeURIComponent(targetUrl);
+  const matchId = decoded.match(/asset\/(\d+)/i) || decoded.match(/(\d+)/);
+  const assetId = matchId ? matchId[1] : "4475";
 
-  const encodedUrl = encodeURI(decodeURI(finalUrl));
+  const endpoints = [
+    `https://rahavard365.com/api/v2/asset/${assetId}`,
+    `https://rahavard365.com/api/asset/${assetId}`
+  ];
 
-  const response = await fetch(`${encodedUrl}?_t=${Date.now()}`, {
-    method: "GET",
-    headers: {
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-      "Accept-Language": "fa-IR,fa;q=0.9,en;q=0.8",
-      "Referer": "https://rahavard365.com/"
-    },
-    cf: { cacheTtl: 0, cacheEverything: false }
-  });
+  let lastError = "";
 
-  if (!response.ok) {
-    throw new Error(`ره‌آورد HTTP ${response.status}`);
-  }
+  for (const apiUrl of endpoints) {
+    try {
+      const response = await fetch(`${apiUrl}?_t=${Date.now()}`, {
+        method: "GET",
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+          "Accept": "application/json, text/plain, */*",
+          "Accept-Language": "fa-IR,fa;q=0.9,en;q=0.8",
+          "Referer": `https://rahavard365.com/asset/${assetId}/`
+        },
+        cf: { cacheTtl: 0, cacheEverything: false }
+      });
 
-  const html = await response.text();
+      if (response.ok) {
+        const json = await response.json();
+        const d = json?.data || json?.result || json;
+        const price = d?.last_price || d?.close_price || d?.real_close_price;
 
-  // پاک‌سازی هوشمند ارقام فارسی و جداکننده‌ها
-  function cleanNum(str) {
-    if (!str) return null;
-    const eng = str
-      .replace(/[۰-۹]/g, d => "۰۱۲۳۴۵۶۷۸۹".indexOf(d))
-      .replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d))
-      .replace(/[^0-9]/g, "");
-    const n = Number(eng);
-    return (Number.isFinite(n) && n >= 100000 && n <= 5000000) ? n : null;
-  }
-
-  // ۱. جستجو بر اساس الگوهای متنی تابلوی معاملات (حتی اگر بین لیبل و قیمت ساعت یا تگ افتاده باشد)
-  const patterns = [
-    label ? new RegExp(`${label}[\\s\\S]{0,150}?([0-9۰-۹٠-٩]{3}[\\s,،٬\\.]{0,3}[0-9۰-۹٠-٩]{3})`, "i") : null,
-    /آخرین معامله[\s\S]{0,150}?([0-9۰-۹٠-٩]{3}[\\s,،٬\\.]{0,3}[0-9۰-۹٠-٩]{3})/i,
-    /پایانی[\s\S]{0,150}?([0-9۰-۹٠-٩]{3}[\\s,،٬\\.]{0,3}[0-9۰-۹٠-٩]{3})/i,
-    /آخرین قیمت[\s\S]{0,150}?([0-9۰-۹٠-٩]{3}[\\s,،٬\\.]{0,3}[0-9۰-۹٠-٩]{3})/i,
-    /عیار[\s\S]{0,300}?([0-9۰-۹٠-٩]{3}[\\s,،٬\\.]{0,3}[0-9۰-۹٠-٩]{3})/i
-  ].filter(Boolean);
-
-  for (const pat of patterns) {
-    const m = html.match(pat);
-    if (m && m[1]) {
-      const val = cleanNum(m[1]);
-      if (val) return val;
+        if (price && Number(price) > 1000) {
+          return Number(price);
+        }
+      } else {
+        lastError = `HTTP ${response.status}`;
+      }
+    } catch (e) {
+      lastError = e.message;
     }
   }
 
-  // ۲. جستجو در کدهای اسکریپت و جیسون تعبیه شده در سورس صفحه
-  const jsonMatches = html.match(/"(?:last_price|close_price|real_close_price|trade_price)":\s*([0-9]+)/gi) ||
-                      html.match(/(?:last_price|close_price)\s*:\s*([0-9]+)/gi);
-  if (jsonMatches) {
-    for (const jm of jsonMatches) {
-      const val = cleanNum(jm);
-      if (val) return val;
-    }
-  }
-
-  // ۳. شکار هر عدد ۶ رقمی معتبر تابلوی معاملات در بازه ریالی عیار (بین ۵۰۰ هزار تا ۱.۵ میلیون ریال)
-  const allSixDigits = html.match(/([0-9۰-۹٠-٩]{3}[\s,،٬][0-9۰-۹٠-٩]{3})/g);
-  if (allSixDigits) {
-    for (const matchStr of allSixDigits) {
-      const val = cleanNum(matchStr);
-      if (val) return val;
-    }
-  }
-
-  throw new Error("داده‌های قیمت در صفحه ره‌آورد پیدا نشد.");
+  throw new Error(`ره‌آورد ۳۶۵ پاسخ نداد (${lastError})`);
 }
 
 // ------------------------------------------
@@ -211,8 +180,9 @@ export async function executeSingleSource(source) {
   const target = source.target || "";
   const label = source.label || "";
 
+  // تشخیص خودکار ره‌آورد چه کاربر type را rahavard بگذارد و چه لینک را در custom بنویسد
   if (type === "rahavard" || (target && target.includes("rahavard365.com"))) {
-    return await fetchFromRahavard(target, label);
+    return await fetchFromRahavard(target);
   }
 
   switch (type) {
